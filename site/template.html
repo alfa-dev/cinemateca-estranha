@@ -1,0 +1,436 @@
+<title>Cinemateca Estranha</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: marquise de cinema de repertório — cabeçalho fixo com busca, abas por sessão, tags facetadas, grade de cartazes 2:3 */
+:root{
+  --bg:#121019; --surface:#1b1824; --raise:#252131; --line:#2f2a3d;
+  --fg:#eeeaf4; --muted:#9d96ad; --accent:#f4a640; --on-accent:#1a1206;
+  --c-weird:#e86bb3; --c-mundo:#3fc2b0; --c-mindfuck:#9b8cff; --c-horror:#ef5a4f; --c-thelema:#d9b54a;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --shadow:0 18px 50px rgb(0 0 0 / .45);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#eceef3; --surface:#ffffff; --raise:#e2e4ec; --line:#cfd2dd;
+  --fg:#17141f; --muted:#5d5870; --accent:#b0600a; --on-accent:#fff;
+  --c-weird:#b8327f; --c-mundo:#14806f; --c-mindfuck:#5a48d6; --c-horror:#c0322a; --c-thelema:#8c6c0c;
+  --shadow:0 18px 50px rgb(20 18 40 / .18); color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#eceef3; --surface:#ffffff; --raise:#e2e4ec; --line:#cfd2dd;
+  --fg:#17141f; --muted:#5d5870; --accent:#b0600a; --on-accent:#fff;
+  --c-weird:#b8327f; --c-mundo:#14806f; --c-mindfuck:#5a48d6; --c-horror:#c0322a; --c-thelema:#8c6c0c;
+  --shadow:0 18px 50px rgb(20 18 40 / .18); color-scheme:light}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--body);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Cabeçalho */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;gap:16px;align-items:center;padding-block:12px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;line-height:.9;margin-right:auto}
+.brand b{font:900 clamp(26px,4vw,38px)/.9 var(--display);letter-spacing:.01em;text-transform:uppercase}
+.brand b span{color:var(--accent)}
+.brand small{font:500 11px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:5px}
+.search{position:relative;flex:1 1 340px;max-width:560px}
+.search input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:11px 44px 11px 42px;font-size:15px}
+.search input::placeholder{color:var(--muted)}
+.search svg{position:absolute;left:15px;top:50%;translate:0 -50%;width:18px;height:18px;stroke:var(--muted);fill:none}
+.search kbd{position:absolute;right:12px;top:50%;translate:0 -50%;font:500 11px var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+.search button.clear{position:absolute;right:8px;top:50%;translate:0 -50%;border:0;background:var(--raise);border-radius:999px;width:28px;height:28px;cursor:pointer}
+.tools{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 14px;cursor:pointer;font-weight:500;font-size:14px;text-decoration:none;color:var(--fg);white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn svg{width:16px;height:16px;fill:currentColor}
+
+/* Sessões */
+.cats{display:flex;gap:8px;overflow-x:auto;padding-block:16px 4px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex:none;display:flex;align-items:baseline;gap:8px;border:1px solid var(--line);background:transparent;border-radius:6px;padding:8px 14px;cursor:pointer}
+.cat b{font:700 19px/1 var(--display);text-transform:uppercase;letter-spacing:.03em}
+.cat i{font:normal 500 12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.cat::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--dot,var(--accent));align-self:center}
+.cat[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.cat[aria-pressed="true"] i{color:inherit;opacity:.7}
+
+/* Tags */
+.filters{display:grid;gap:10px;padding-block:14px 6px}
+.facet{display:flex;gap:6px 10px;align-items:baseline;flex-wrap:wrap}
+.facet h3{font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0;width:100px;flex:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:13px;cursor:pointer;display:inline-flex;gap:6px;align-items:baseline}
+.chip i{font:normal 11px var(--mono);color:var(--muted)}
+.chip:hover{border-color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chip[aria-pressed="true"] i{color:inherit}
+.chip[role="radio"]::before{content:"";width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;align-self:center;opacity:.6}
+.chip[role="radio"][aria-checked="true"]::before{background:currentColor;opacity:1}
+.chip.more{border-style:dashed;color:var(--muted)}
+.toggle-filters{display:none}
+
+.bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding-block:12px;border-bottom:1px solid var(--line)}
+.count{font:500 13px var(--mono);color:var(--muted);margin-right:auto}
+.count b{color:var(--fg);font-weight:500}
+.sort{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.sort button{border:0;background:transparent;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--muted)}
+.sort button[aria-pressed="true"]{background:var(--raise);color:var(--fg)}
+.reset{border:0;background:none;color:var(--accent);cursor:pointer;font-weight:600;font-size:13px;padding:6px 0}
+
+/* Seções e grade */
+main{padding-block:8px 64px}
+.section{padding-top:28px}
+.section-head{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin-bottom:16px}
+.section-head h2{font:900 clamp(30px,5vw,52px)/.9 var(--display);text-transform:uppercase;margin:0;letter-spacing:.005em;text-wrap:balance}
+.section-head h2::first-letter{color:var(--dot)}
+.section-head p{margin:0 0 3px;color:var(--muted);max-width:52ch;flex:1 1 260px}
+.section-head .n{font:500 12px var(--mono);color:var(--dot);border:1px solid currentColor;border-radius:4px;padding:2px 7px;margin-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:22px 16px}
+@media (max-width:520px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}}
+.card{display:flex;flex-direction:column;gap:8px;cursor:pointer;background:none;border:0;padding:0;text-align:left;min-width:0}
+.poster{position:relative;aspect-ratio:2/3;max-width:100%;border-radius:4px;overflow:hidden;background:var(--raise);box-shadow:0 1px 0 var(--line)}
+.poster img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+.card:hover .poster img{transform:scale(1.04)}
+.poster .play{position:absolute;right:8px;bottom:8px;width:38px;height:38px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;opacity:0;translate:0 6px;transition:.2s;box-shadow:var(--shadow)}
+.poster .play svg{width:15px;height:15px;fill:currentColor;margin-left:2px}
+.card:hover .play,.card:focus-visible .play{opacity:1;translate:0 0}
+@media (hover:none){.poster .play{opacity:1;translate:0 0;width:32px;height:32px}}
+.poster .dots{position:absolute;left:8px;top:8px;display:flex;gap:4px}
+.poster .dots span{width:9px;height:9px;border-radius:50%;background:var(--d);box-shadow:0 0 0 2px rgb(0 0 0 / .35)}
+.poster .flag{position:absolute;left:0;bottom:10px;background:var(--fg);color:var(--bg);font:600 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px 3px 8px;border-radius:0 3px 3px 0}
+.card h4{margin:0;font-size:14px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+.card .meta{font:12px var(--mono);color:var(--muted);margin-top:-4px;overflow-wrap:anywhere}
+
+/* Capa gerada para filmes sem cartaz */
+.gen{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:12px;background:linear-gradient(160deg,hsl(var(--h) 45% 26%),hsl(calc(var(--h) + 40) 50% 12%));color:#f3eef8}
+.gen b{font:900 22px/.95 var(--display);text-transform:uppercase;overflow-wrap:anywhere;text-wrap:balance}
+.gen span{font:500 11px var(--mono);opacity:.75}
+
+.empty{padding:64px 0;text-align:center;color:var(--muted)}
+.empty b{display:block;font:900 34px var(--display);text-transform:uppercase;color:var(--fg)}
+
+/* Ficha do filme */
+dialog{border:0;padding:0;background:var(--surface);color:var(--fg);border-radius:10px;width:min(860px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-shadow:var(--shadow)}
+dialog::backdrop{background:rgb(8 6 14 / .72);backdrop-filter:blur(3px)}
+.sheet{display:grid;grid-template-columns:260px minmax(0,1fr);gap:0}
+.sheet .poster{border-radius:10px 0 0 10px;height:100%;aspect-ratio:auto;min-height:390px}
+.info{padding:26px 28px 24px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.info h2{font:900 clamp(30px,4.5vw,46px)/.92 var(--display);text-transform:uppercase;margin:0;text-wrap:balance;overflow-wrap:anywhere;padding-right:36px}
+.aka{color:var(--muted);font-size:14px;margin-top:-6px}
+.facts{display:flex;gap:6px 18px;flex-wrap:wrap;font:13px var(--mono);color:var(--muted)}
+.facts b{color:var(--fg);font-weight:500}
+.info .chips{flex:none}
+.info .label{font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.catpills{display:flex;gap:6px;flex-wrap:wrap}
+.catpill{font:700 15px var(--display);text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--dot);color:var(--dot);background:transparent;border-radius:4px;padding:3px 9px;cursor:pointer}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:6px}
+.close{position:absolute;right:12px;top:12px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:18px;line-height:1}
+.note{font-size:12px;color:var(--muted)}
+@media (max-width:640px){
+  .sheet{grid-template-columns:1fr}
+  .sheet .poster{border-radius:10px 10px 0 0;min-height:0;aspect-ratio:16/10}
+  .sheet .poster img{object-position:center 20%}
+  .info{padding:20px 18px}
+  .facet h3{width:100%}
+  .toggle-filters{display:inline-flex}
+  .search{order:3;flex-basis:100%;max-width:none}
+  .search kbd{display:none}
+}
+/* Palco do trailer e onde assistir */
+dialog{width:min(980px,calc(100vw - 24px))}
+.stage{position:relative;background:#000;border-radius:10px 10px 0 0;aspect-ratio:16/9;max-width:100%}
+.stage video{width:100%;height:100%;display:block;border-radius:10px 10px 0 0;background:#000}
+.stage + .sheet .poster{border-radius:0 0 0 10px}
+.watch{display:grid;gap:8px}
+.watch-row{display:flex;gap:6px 10px;align-items:baseline;flex-wrap:wrap}
+.watch-row span{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);width:92px;flex:none}
+.prov{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:13px;font-weight:600;text-decoration:none;color:var(--fg);background:var(--raise)}
+.prov:hover{border-color:var(--accent)}
+.prov.sub{border-color:var(--accent);background:transparent}
+.nowatch{font-size:13px;color:var(--muted)}
+@media (max-width:640px){.stage + .sheet .poster{border-radius:0}}
+/* Barra de filtros compacta */
+.fwrap{position:relative;padding-block:14px 2px}
+.filterbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fbtn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px 7px 14px;font-size:14px;font-weight:500;cursor:pointer;max-width:100%}
+.fbtn:hover{border-color:var(--muted)}
+.fbtn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;opacity:.7;transition:rotate .15s}
+.fbtn[aria-expanded="true"]{border-color:var(--fg)}
+.fbtn[aria-expanded="true"] svg{rotate:180deg}
+.fbtn.on{border-color:var(--accent);color:var(--accent)}
+.fbtn b{background:var(--accent);color:var(--on-accent);font:600 11px var(--mono);border-radius:999px;padding:1px 6px}
+.pop{position:absolute;z-index:6;width:min(340px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px;display:flex;flex-direction:column;gap:8px}
+.pop-head{display:flex;justify-content:space-between;align-items:baseline;padding:2px 6px}
+.pop-head b{font:700 18px var(--display);text-transform:uppercase;letter-spacing:.03em}
+.pop-head button{border:0;background:none;color:var(--accent);font-weight:600;font-size:13px;cursor:pointer}
+.pop input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px}
+.opts{max-height:min(340px,50vh);overflow:auto;display:flex;flex-direction:column;overscroll-behavior:contain}
+.opt{display:flex;gap:10px;align-items:center;padding:7px 8px;border-radius:6px;border:0;background:none;text-align:left;cursor:pointer;font-size:14px}
+.opt:hover{background:var(--raise)}
+.opt .box{width:16px;height:16px;border:1.5px solid var(--muted);border-radius:4px;flex:none;display:grid;place-items:center}
+.opt[role="radio"] .box{border-radius:50%}
+.opt[aria-checked="true"] .box{background:var(--accent);border-color:var(--accent)}
+.opt[aria-checked="true"] .box::after{content:"";width:5px;height:9px;border:solid var(--on-accent);border-width:0 2px 2px 0;rotate:45deg;margin-top:-2px}
+.opt[role="radio"][aria-checked="true"] .box::after{width:6px;height:6px;border:0;border-radius:50%;background:var(--on-accent);rotate:0deg;margin:0}
+.opt .l{flex:1;min-width:0;overflow-wrap:anywhere}
+.opt i{font:normal 12px var(--mono);color:var(--muted)}
+.opts .none{padding:10px 8px;color:var(--muted);font-size:13px}
+.active{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-top:10px}
+.achip{display:inline-flex;align-items:center;gap:6px;border:0;background:var(--accent);color:var(--on-accent);border-radius:999px;padding:4px 8px 4px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.achip span{opacity:.7}
+.achip em{font-style:normal;font-weight:400;opacity:.75}
+@media (max-width:640px){
+  .pop{position:fixed;left:0!important;right:0;top:auto!important;bottom:0;width:auto;border-radius:16px 16px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .opts{max-height:55vh}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><b>Cinemateca <span>Estranha</span></b><small id="tagline">filmes de culto · 5 sessões</small></div>
+    <label class="search">
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Buscar título, diretor, produtora, país, elenco…" autocomplete="off" aria-label="Buscar filmes">
+      <kbd>/</kbd>
+      <button class="clear" id="clear" type="button" aria-label="Limpar busca" hidden>×</button>
+    </label>
+    <div class="tools">
+      <button class="btn" id="random" type="button" title="Abrir um filme aleatório"><svg viewBox="0 0 24 24"><path d="M17 3h4v4h-2V6.4l-4.3 4.3-1.4-1.4L17.6 5H17V3ZM3 5.4 4.4 4l15.2 15.2-1.4 1.4L3 5.4ZM14.7 13.3l1.4-1.4L19 14.8V14h2v6h-6v-2h1.6l-1.9-1.9-1.4-1.4 1.4-1.4ZM3 18.6 9.3 12.3l1.4 1.4L4.4 20 3 18.6Z"/></svg>Me surpreenda</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="cats" id="cats" aria-label="Sessões"></nav>
+  <div class="fwrap" id="fwrap">
+    <div class="filterbar" id="filters" role="toolbar" aria-label="Filtros"></div>
+    <div class="pop" id="pop" role="dialog" aria-modal="false" hidden>
+      <div class="pop-head"><b id="popTitle"></b><button type="button" id="popClear">Limpar</button></div>
+      <input id="popq" type="search" placeholder="Filtrar a lista…" autocomplete="off" aria-label="Filtrar opções">
+      <div class="opts" id="opts"></div>
+    </div>
+    <div class="active" id="active" hidden></div>
+  </div>
+  <div class="bar">
+    <div class="count" id="count"></div>
+    <button class="reset" id="reset" type="button" hidden>Limpar filtros</button>
+    <div class="sort" id="sort" role="group" aria-label="Ordenar">
+      <button type="button" data-s="default" aria-pressed="true">Planilha</button>
+      <button type="button" data-s="title" aria-pressed="false">A–Z</button>
+      <button type="button" data-s="new" aria-pressed="false">Recentes</button>
+      <button type="button" data-s="old" aria-pressed="false">Antigos</button>
+    </div>
+  </div>
+</div>
+<main class="wrap" id="main"></main>
+
+<dialog id="dlg" aria-labelledby="dTitle"><div id="dBody"></div></dialog>
+
+<script>
+const MOVIES = __DATA__;
+const CATS = [
+  {id:"weird", name:"Weird Movies", desc:"Estranhezas de culto: comédias de terror espanholas, musicais de ficção científica, palhaços do espaço e ninjas noruegueses."},
+  {id:"mundo", name:"Weird pelo mundo", desc:"Raridades de dezenas de países, da animação húngara ao experimental grego. Muitas estão completas no YouTube."},
+  {id:"mindfuck", name:"Mindfuck", desc:"Filmes que dobram a realidade, o tempo e a cabeça de quem assiste. Separados por gênero na planilha original."},
+  {id:"horror", name:"Pleasing Horror", desc:"Terror bonito de ver: bruxas em technicolor, lobos de conto de fadas e gêmeos de Cronenberg."},
+  {id:"thelema", name:"Thelema, Magia e Ocultismo", desc:"Crowley, Kenneth Anger, bruxaria, Lovecraft e documentários sobre o oculto."}
+];
+const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
+let POSTERS = {};
+
+const norm = s => (s||"").toString().normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const esc = s => (s??"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const decade = y => y ? (Math.floor(y/10)*10)+"s" : null;
+const hue = s => [...s].reduce((h,c)=>(h*31+c.charCodeAt(0))%360,7);
+
+MOVIES.forEach((m,i)=>{
+  m.idx=i;
+  const stream=[...new Set((m.watch||[]).filter(o=>o.t==="Assinatura"||o.t.startsWith("Grátis")).map(o=>o.n))];
+  m.stream=stream;
+  const w=[...stream,...m.flags]; if((m.watch||[]).some(o=>o.t==="Aluguel"||o.t==="Compra")) w.push("Aluguel ou compra");
+  m.directors=m.directors||[]; m.studios=m.studios||[];
+  m.tags={g:m.genres, r:m.directors, p:m.studios, c:m.countries, d:m.year?[decade(m.year)]:[], w, k:[m.kind||"Longa"]};
+  m.hay=norm([m.title,...m.aka,m.year,...m.genres,...m.countries,m.cast,...m.directors,...m.studios,...m.stream,...m.flags,...m.cats.map(c=>CAT[c].name),m.kind].join(" "));
+});
+
+const FACETS = [
+  {k:"g", name:"Gênero", top:14},
+  {k:"r", name:"Diretor", top:10},
+  {k:"p", name:"Produtora", top:10},
+  {k:"c", name:"País", top:12},
+  {k:"d", name:"Década", top:99, sort:"key", single:true},
+  {k:"w", name:"Onde ver", top:99},
+  {k:"k", name:"Formato", top:99, single:true}
+];
+const state = {cat:"all", q:"", sel:{g:new Set(),r:new Set(),p:new Set(),c:new Set(),d:new Set(),w:new Set(),k:new Set()}, sort:"default", open:{}, pop:null};
+try{ const s=JSON.parse(localStorage.getItem("cine-sort")); if(s) state.sort=s; }catch(e){}
+const h = location.hash.slice(1); if (CAT[h]) state.cat = h;
+
+const $ = id => document.getElementById(id);
+
+function matches(m, skip){
+  if (state.cat!=="all" && !m.cats.includes(state.cat)) return false;
+  if (state.q){ const words=norm(state.q).split(/\s+/).filter(Boolean); if(!words.every(w=>m.hay.includes(w))) return false; }
+  for (const f of FACETS){ if (f.k===skip) continue; for (const v of state.sel[f.k]) if(!m.tags[f.k].includes(v)) return false; }
+  return true;
+}
+function sorted(list){
+  const l=[...list];
+  if(state.sort==="title") l.sort((a,b)=>norm(a.title).localeCompare(norm(b.title)));
+  if(state.sort==="new") l.sort((a,b)=>(b.year||0)-(a.year||0));
+  if(state.sort==="old") l.sort((a,b)=>(a.year||9999)-(b.year||9999));
+  return l;
+}
+
+function coverHTML(m, big){
+  const src = POSTERS[m.id];
+  if (src) return `<img src="${src}" alt="Cartaz de ${esc(m.title)}" loading="lazy">`;
+  return `<div class="gen" style="--h:${hue(m.title)}"><span>${m.year||"s/ data"}</span><b style="${big?"font-size:40px":""}">${esc(m.title)}</b><span>${esc(m.countries[0]||"")}</span></div>`;
+}
+function cardHTML(m){
+  const flag = m.stream[0] ? `<span class="flag">${esc(m.stream[0])}${m.stream.length>1?` +${m.stream.length-1}`:""}</span>` : m.flags.includes("Completo no YouTube") ? `<span class="flag">Completo no YT</span>` : "";
+  const dots = m.cats.map(c=>`<span style="--d:var(--c-${c})" title="${esc(CAT[c].name)}"></span>`).join("");
+  const meta = [m.year, m.directors[0]||m.countries[0]].filter(Boolean).join(" · ");
+  return `<button class="card" type="button" data-i="${m.idx}">
+    <div class="poster">${coverHTML(m)}<div class="dots">${dots}</div>${flag}<span class="play" title="Ver trailer"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></span></div>
+    <h4>${esc(m.title)}</h4><div class="meta">${esc(meta)}</div></button>`;
+}
+
+function renderCats(){
+  const counts = {all:MOVIES.length}; CATS.forEach(c=>counts[c.id]=MOVIES.filter(m=>m.cats.includes(c.id)).length);
+  $("cats").innerHTML = [{id:"all",name:"Todas as sessões"},...CATS].map(c=>
+    `<button class="cat" type="button" data-c="${c.id}" aria-pressed="${state.cat===c.id}" style="--dot:${c.id==="all"?"var(--accent)":`var(--c-${c.id})`}"><b>${esc(c.name)}</b><i>${counts[c.id]}</i></button>`).join("");
+}
+function facetEntries(f){
+  const cnt = new Map();
+  MOVIES.forEach(m=>{ if(matches(m,f.k)) m.tags[f.k].forEach(v=>cnt.set(v,(cnt.get(v)||0)+1)); });
+  state.sel[f.k].forEach(v=>{ if(!cnt.has(v)) cnt.set(v,0); });
+  return [...cnt].sort(f.sort==="key"?(a,b)=>a[0].localeCompare(b[0]):(a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"pt"));
+}
+const caret = `<svg viewBox="0 0 12 12"><path d="m2.5 4.5 3.5 3.5 3.5-3.5"/></svg>`;
+function renderFilters(){
+  $("filters").innerHTML = FACETS.map(f=>{
+    const sel=[...state.sel[f.k]], n=sel.length;
+    const label = f.single && n ? sel[0] : f.name;
+    return `<button class="fbtn ${n?"on":""}" type="button" data-facet="${f.k}" aria-haspopup="true" aria-expanded="${state.pop===f.k}">${esc(label)}${!f.single&&n?`<b>${n}</b>`:""}${caret}</button>`;
+  }).join("");
+  const chips = FACETS.flatMap(f=>[...state.sel[f.k]].map(v=>`<button class="achip" type="button" data-f="${f.k}" data-v="${esc(v)}" title="Remover filtro"><em>${f.name}:</em> ${esc(v)} <span aria-hidden="true">×</span></button>`));
+  $("active").innerHTML = chips.join("");
+  $("active").hidden = !chips.length;
+  if(state.pop) positionPop();
+}
+function renderOpts(){
+  if(!state.pop) return;
+  const f=FACETS.find(x=>x.k===state.pop), q=norm($("popq").value);
+  const entries=facetEntries(f).filter(([v])=>!q||norm(v).includes(q));
+  $("popClear").hidden = !state.sel[f.k].size;
+  $("opts").innerHTML = entries.length ? entries.map(([v,n])=>{
+    const on=state.sel[f.k].has(v);
+    return `<button class="opt" type="button" role="${f.single?"radio":"checkbox"}" aria-checked="${on}" data-f="${f.k}" data-v="${esc(v)}"><span class="box"></span><span class="l">${esc(v)}</span><i>${n}</i></button>`;
+  }).join("") : `<div class="none">Nenhuma opção encontrada.</div>`;
+}
+function positionPop(){
+  const b=document.querySelector(`.fbtn[data-facet="${state.pop}"]`), pop=$("pop"), wrap=$("fwrap");
+  if(!b) return;
+  const maxLeft = wrap.clientWidth - pop.offsetWidth;
+  pop.style.left = Math.max(0, Math.min(b.offsetLeft, maxLeft)) + "px";
+  pop.style.top = (b.offsetTop + b.offsetHeight + 8) + "px";
+}
+function openPop(k){
+  state.pop=k; const f=FACETS.find(x=>x.k===k);
+  $("popTitle").textContent=f.name; $("popq").value="";
+  $("popq").hidden = facetEntries(f).length <= 12;
+  $("pop").hidden=false; renderFilters(); renderOpts(); $("opts").scrollTop=0;
+  if(!$("popq").hidden && matchMedia("(hover:hover)").matches) $("popq").focus();
+}
+function closePop(){ if(!state.pop) return; state.pop=null; $("pop").hidden=true; renderFilters(); }
+function render(){
+  renderCats(); renderFilters(); renderOpts();
+  const list = sorted(MOVIES.filter(m=>matches(m)));
+  const active = state.q || FACETS.some(f=>state.sel[f.k].size);
+  $("reset").hidden = !active;
+  $("clear").hidden = !state.q;
+  $("count").innerHTML = `<b>${list.length}</b> ${list.length===1?"filme":"filmes"}${state.cat!=="all"?` em ${esc(CAT[state.cat].name)}`:""}`;
+  document.querySelectorAll("#sort button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s===state.sort));
+  const main=$("main");
+  if(!list.length){ main.innerHTML=`<div class="empty"><b>Nada na tela</b>Nenhum filme combina com a busca e as tags escolhidas. Tente remover uma tag.</div>`; return; }
+  const groups = state.cat==="all" ? CATS.map(c=>({c, items:list.filter(m=>m.cats.includes(c.id))})).filter(g=>g.items.length) : [{c:CAT[state.cat], items:list}];
+  main.innerHTML = groups.map(({c,items})=>`<section class="section" style="--dot:var(--c-${c.id})">
+      <div class="section-head"><h2>${esc(c.name)}</h2><span class="n">${items.length}</span><p>${esc(c.desc)}</p></div>
+      <div class="grid">${items.map(cardHTML).join("")}</div></section>`).join("");
+}
+
+function trailerURL(m){ return m.yt ? `https://www.youtube.com/watch?v=${m.yt}` : `https://www.youtube.com/results?search_query=${encodeURIComponent(m.title+" "+(m.year||"")+" trailer")}`; }
+function openMovie(m, play){
+  const fullYT = m.flags.includes("Completo no YouTube");
+  const tagBtn = (k,v)=>`<button class="chip" type="button" data-f="${k}" data-v="${esc(v)}" data-close>${esc(v)}</button>`;
+  const facts = [m.directors.length&&`<span>Direção <b>${esc(m.directors.join(", "))}</b></span>`, m.year&&`<span>Ano <b>${m.year}</b></span>`, m.kind&&`<span>Formato <b>${esc(m.kind)}</b></span>`, m.cast&&`<span>Elenco <b>${esc(m.cast)}</b></span>`].filter(Boolean).join("");
+  const tags = [...m.directors.map(v=>tagBtn("r",v)), ...m.studios.map(v=>tagBtn("p",v)), ...m.genres.map(v=>tagBtn("g",v)), ...m.countries.map(v=>tagBtn("c",v)), ...(m.year?[tagBtn("d",decade(m.year))]:[]), ...m.stream.map(v=>tagBtn("w",v)), ...m.flags.map(v=>tagBtn("w",v))].join("");
+  const ORDER=["Assinatura","Grátis","Grátis com anúncios","Aluguel","Compra"];
+  const byType=ORDER.map(t=>[t,(m.watch||[]).filter(o=>o.t===t)]).filter(([,l])=>l.length);
+  const watch = byType.length ? byType.map(([t,l])=>`<div class="watch-row"><span>${t}</span>${l.map(o=>`<a class="prov ${t==="Assinatura"||t.startsWith("Grátis")?"sub":""}" href="${esc(o.u)}" target="_blank" rel="noopener">${esc(o.n)}</a>`).join("")}</div>`).join("")
+    : `<div class="nowatch">Não está em nenhum streaming no Brasil agora.${m.flags.includes("Completo no YouTube")?" Mas está completo no YouTube.":""}${m.platforms.length?` Na planilha estava anotado: ${esc(m.platforms.join(", "))}.`:""}</div>`;
+  $("dBody").innerHTML = `<button class="close" type="button" data-close aria-label="Fechar">×</button>
+    ${m.tr?`<div class="stage" id="stage" ${play?"":"hidden"}><video id="vid" controls playsinline preload="none" src="${m.tr}"></video></div>`:""}
+    <div class="sheet"><div class="poster">${coverHTML(m,true)}</div>
+    <div class="info">
+      <h2 id="dTitle">${esc(m.title)}</h2>
+      ${m.aka.length?`<div class="aka">${m.aka.map(esc).join(" · ")}</div>`:""}
+      ${facts?`<div class="facts">${facts}</div>`:""}
+      <div><div class="label">Sessões</div><div class="catpills">${m.cats.map(c=>`<button class="catpill" type="button" data-c="${c}" data-close style="--dot:var(--c-${c})">${esc(CAT[c].name)}</button>`).join("")}</div></div>
+      <div class="watch"><div class="label">Onde assistir no Brasil</div>${watch}</div>
+      ${tags?`<div><div class="label">Tags</div><div class="chips">${tags}</div></div>`:""}
+      <div class="actions">
+        ${m.tr?`<button class="btn primary" type="button" id="playBtn"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>Ver trailer</button>`:`<a class="btn primary" href="${trailerURL(m)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>Procurar trailer no YouTube</a>`}
+        ${m.jw?`<a class="btn" href="https://www.justwatch.com${esc(m.jw)}" target="_blank" rel="noopener">JustWatch</a>`:""}
+        ${fullYT?`<a class="btn" href="https://www.youtube.com/results?search_query=${encodeURIComponent(m.title+" "+(m.year||"")+" full movie")}" target="_blank" rel="noopener">Filme completo no YouTube</a>`:""}
+        ${m.links.map(([t,u])=>`<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join("")}
+        ${m.imdb?`<a class="btn" href="https://www.imdb.com/title/${m.imdb}/" target="_blank" rel="noopener">IMDb</a><a class="btn" href="https://letterboxd.com/imdb/${m.imdb}/" target="_blank" rel="noopener">Letterboxd</a>`:""}
+      </div>
+      <div class="note">${m.tr?"O trailer toca aqui mesmo.":"Este filme não tem trailer salvo; a busca abre no YouTube."} Disponibilidade no Brasil segundo o JustWatch, outubro de 2026.</div>
+    </div></div>`;
+  const d=$("dlg"); if(!d.open) d.showModal(); d.scrollTop=0;
+  const v=$("vid"), startTrailer=()=>{ $("stage").hidden=false; v.play().catch(()=>{}); d.scrollTop=0; };
+  if(v){ $("playBtn").onclick=startTrailer; if(play) startTrailer(); }
+}
+
+document.addEventListener("click", e=>{
+  if (state.pop && !e.target.closest("#pop") && !e.target.closest(".fbtn") && !e.target.closest(".achip")) closePop();
+  const t=e.target.closest("button,a"); if(!t) return;
+  if (t.dataset.facet){ state.pop===t.dataset.facet ? closePop() : openPop(t.dataset.facet); return; }
+  if (t.dataset.close!==undefined && t.closest("dialog")) $("dlg").close();
+  if (t.classList.contains("card")) return openMovie(MOVIES[+t.dataset.i], !!e.target.closest(".play"));
+  if (t.dataset.c){ state.cat = (t.classList.contains("catpill")||state.cat!==t.dataset.c)?t.dataset.c:"all"; try{history.replaceState(null,"",state.cat==="all"?location.pathname:"#"+state.cat)}catch(_){} render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+  if (t.dataset.f){
+    const k=t.dataset.f, s=state.sel[k], v=t.dataset.v, single=FACETS.find(f=>f.k===k).single;
+    if(t.closest("dialog")){ if(single) s.clear(); s.add(v); }
+    else if(s.has(v)) s.delete(v);
+    else { if(single) s.clear(); s.add(v); }
+    render(); return; }
+  if (t.dataset.more){ state.open[t.dataset.more]=!state.open[t.dataset.more]; renderFilters(); return; }
+  if (t.dataset.s){ state.sort=t.dataset.s; try{localStorage.setItem("cine-sort",JSON.stringify(state.sort))}catch(_){} render(); }
+});
+$("dlg").addEventListener("click", e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
+$("dlg").addEventListener("close", ()=>{ const v=$("vid"); if(v){ v.pause(); v.removeAttribute("src"); v.load(); } });
+let qt; $("q").addEventListener("input", e=>{ clearTimeout(qt); qt=setTimeout(()=>{state.q=e.target.value.trim(); render();},90); });
+$("clear").onclick=()=>{ $("q").value=""; state.q=""; render(); $("q").focus(); };
+$("reset").onclick=()=>{ $("q").value=""; state.q=""; FACETS.forEach(f=>state.sel[f.k].clear()); render(); };
+$("random").onclick=()=>{ const l=MOVIES.filter(m=>matches(m)); const pool=l.length?l:MOVIES; openMovie(pool[Math.floor(Math.random()*pool.length)]); };
+$("popq").addEventListener("input", renderOpts);
+$("popClear").onclick=()=>{ state.sel[state.pop].clear(); render(); };
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && state.pop){ const k=state.pop; closePop(); document.querySelector(`.fbtn[data-facet="${k}"]`)?.focus(); } });
+document.addEventListener("keydown", e=>{ if(e.key==="/" && document.activeElement!==$("q") && !$("dlg").open){ e.preventDefault(); $("q").focus(); } });
+$("tagline").textContent = `${MOVIES.length} filmes de culto · ${new Set(MOVIES.flatMap(m=>m.countries)).size} países · 5 sessões`;
+
+render();
+fetch("posters.json").then(r=>r.ok?r.json():{}).then(p=>{ POSTERS=p; render(); }).catch(()=>{});
+</script>

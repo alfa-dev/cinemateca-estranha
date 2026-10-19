@@ -1,0 +1,8 @@
+# trailers (~700 MB) são regenerados por scripts/trailers.py e hospedados como assets do Artifact
+trailers/
+posters/
+venv/
+raw/
+*.log
+.DS_Store
+__pycache__/

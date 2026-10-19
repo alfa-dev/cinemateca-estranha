@@ -147,7 +147,7 @@ dialog::backdrop{background:rgb(8 6 14 / .72);backdrop-filter:blur(3px)}
 /* Palco do trailer e onde assistir */
 dialog{width:min(980px,calc(100vw - 24px))}
 .stage{position:relative;background:#000;border-radius:10px 10px 0 0;aspect-ratio:16/9;max-width:100%}
-.stage video{width:100%;height:100%;display:block;border-radius:10px 10px 0 0;background:#000}
+.stage video,.stage iframe{width:100%;height:100%;display:block;border:0;border-radius:10px 10px 0 0;background:#000}
 .stage + .sheet .poster{border-radius:0 0 0 10px}
 .watch{display:grid;gap:8px}
 .watch-row{display:flex;gap:6px 10px;align-items:baseline;flex-wrap:wrap}
@@ -369,6 +369,9 @@ function render(){
       <div class="grid">${items.map(cardHTML).join("")}</div></section>`).join("");
 }
 
+// fora do Artifact (GitHub Pages, arquivo local) os /_blob/ não existem: o trailer vem embutido do YouTube
+const EMBED = location.protocol==="file:" || location.hostname.endsWith("github.io");
+const hasTrailer = m => EMBED ? !!m.ytt : !!m.tr;
 function trailerURL(m){ return m.yt ? `https://www.youtube.com/watch?v=${m.yt}` : `https://www.youtube.com/results?search_query=${encodeURIComponent(m.title+" "+(m.year||"")+" trailer")}`; }
 function openMovie(m, play){
   const fullYT = m.flags.includes("Completo no YouTube");
@@ -380,7 +383,7 @@ function openMovie(m, play){
   const watch = byType.length ? byType.map(([t,l])=>`<div class="watch-row"><span>${t}</span>${l.map(o=>`<a class="prov ${t==="Assinatura"||t.startsWith("Grátis")?"sub":""}" href="${esc(o.u)}" target="_blank" rel="noopener">${esc(o.n)}</a>`).join("")}</div>`).join("")
     : `<div class="nowatch">Não está em nenhum streaming no Brasil agora.${m.flags.includes("Completo no YouTube")?" Mas está completo no YouTube.":""}${m.platforms.length?` Na planilha estava anotado: ${esc(m.platforms.join(", "))}.`:""}</div>`;
   $("dBody").innerHTML = `<button class="close" type="button" data-close aria-label="Fechar">×</button>
-    ${m.tr?`<div class="stage" id="stage" ${play?"":"hidden"}><video id="vid" controls playsinline preload="none" src="${m.tr}"></video></div>`:""}
+    ${hasTrailer(m)?`<div class="stage" id="stage" ${play?"":"hidden"}>${EMBED?`<iframe id="vid" title="Trailer" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>`:`<video id="vid" controls playsinline preload="none" src="${m.tr}"></video>`}</div>`:""}
     <div class="sheet"><div class="poster">${coverHTML(m,true)}</div>
     <div class="info">
       <h2 id="dTitle">${esc(m.title)}</h2>
@@ -390,16 +393,16 @@ function openMovie(m, play){
       <div class="watch"><div class="label">Onde assistir no Brasil</div>${watch}</div>
       ${tags?`<div><div class="label">Tags</div><div class="chips">${tags}</div></div>`:""}
       <div class="actions">
-        ${m.tr?`<button class="btn primary" type="button" id="playBtn"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>Ver trailer</button>`:`<a class="btn primary" href="${trailerURL(m)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>Procurar trailer no YouTube</a>`}
+        ${hasTrailer(m)?`<button class="btn primary" type="button" id="playBtn"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>Ver trailer</button>`:`<a class="btn primary" href="${trailerURL(m)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>Procurar trailer no YouTube</a>`}
         ${m.jw?`<a class="btn" href="https://www.justwatch.com${esc(m.jw)}" target="_blank" rel="noopener">JustWatch</a>`:""}
         ${fullYT?`<a class="btn" href="https://www.youtube.com/results?search_query=${encodeURIComponent(m.title+" "+(m.year||"")+" full movie")}" target="_blank" rel="noopener">Filme completo no YouTube</a>`:""}
         ${m.links.map(([t,u])=>`<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join("")}
         ${m.imdb?`<a class="btn" href="https://www.imdb.com/title/${m.imdb}/" target="_blank" rel="noopener">IMDb</a><a class="btn" href="https://letterboxd.com/imdb/${m.imdb}/" target="_blank" rel="noopener">Letterboxd</a>`:""}
       </div>
-      <div class="note">${m.tr?"O trailer toca aqui mesmo.":"Este filme não tem trailer salvo; a busca abre no YouTube."} Disponibilidade no Brasil segundo o JustWatch, outubro de 2026.</div>
+      <div class="note">${hasTrailer(m)?"O trailer toca aqui mesmo.":"Este filme não tem trailer salvo; a busca abre no YouTube."} Disponibilidade no Brasil segundo o JustWatch, outubro de 2026.</div>
     </div></div>`;
   const d=$("dlg"); if(!d.open) d.showModal(); d.scrollTop=0;
-  const v=$("vid"), startTrailer=()=>{ $("stage").hidden=false; v.play().catch(()=>{}); d.scrollTop=0; };
+  const v=$("vid"), startTrailer=()=>{ $("stage").hidden=false; if(EMBED){ if(!v.src) v.src=`https://www.youtube-nocookie.com/embed/${m.ytt}?autoplay=1&rel=0`; } else v.play().catch(()=>{}); d.scrollTop=0; };
   if(v){ $("playBtn").onclick=startTrailer; if(play) startTrailer(); }
 }
 
@@ -420,7 +423,7 @@ document.addEventListener("click", e=>{
   if (t.dataset.s){ state.sort=t.dataset.s; try{localStorage.setItem("cine-sort",JSON.stringify(state.sort))}catch(_){} render(); }
 });
 $("dlg").addEventListener("click", e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
-$("dlg").addEventListener("close", ()=>{ const v=$("vid"); if(v){ v.pause(); v.removeAttribute("src"); v.load(); } });
+$("dlg").addEventListener("close", ()=>{ const v=$("vid"); if(v){ if(EMBED) v.remove(); else { v.pause(); v.removeAttribute("src"); v.load(); } } });
 let qt; $("q").addEventListener("input", e=>{ clearTimeout(qt); qt=setTimeout(()=>{state.q=e.target.value.trim(); render();},90); });
 $("clear").onclick=()=>{ $("q").value=""; state.q=""; render(); $("q").focus(); };
 $("reset").onclick=()=>{ $("q").value=""; state.q=""; FACETS.forEach(f=>state.sel[f.k].clear()); render(); };

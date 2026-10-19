@@ -14,6 +14,7 @@ for l in open(S+'/assets.map'):
   assert re.fullmatch(r'[0-9a-f]{32}',aid),l
   if os.path.exists(f): assert os.path.getsize(f)==int(size),('size mismatch',l)
   AM[k]=aid
+YT=dict(l.split() for l in open(S+'/trailers.yt')) if os.path.exists(S+'/trailers.yt') else {}
 T={'FLATRATE':'Assinatura','FREE':'Grátis','ADS':'Grátis com anúncios','RENT':'Aluguel','BUY':'Compra'}
 def pname(n):
   n=n.replace(' with Ads','').replace(' Standard','')
@@ -35,6 +36,7 @@ for m in M:
   m['watch']=offers
   a=AM.get(m['id'])
   if a: m['tr']='/_blob/'+a
+  if m['id'] in YT: m['ytt']=YT[m['id']]
 d=json.dumps(M,ensure_ascii=False,separators=(',',':')).replace('</','<\\/')
 t=open(S+'/site/template.html').read()
 open(S+'/site/cinemateca.html','w').write(t.replace('__DATA__',d))

@@ -3,7 +3,8 @@
 Catálogo de 248 filmes estranhos, cult e de horror, gerado a partir de uma planilha pessoal (`data/Movies.xlsx`).
 Tem capas, trailers que tocam dentro da página, categorias, filtros (gênero, diretor, produtora, país, década, onde ver, formato), busca e "onde assistir no Brasil".
 
-Versão publicada: https://claude.ai/artifact/6ziCfiwDLVMxvY9QeWfSai
+- GitHub Pages: https://alfa-dev.github.io/cinemateca-estranha/
+- Artifact no Claude: https://claude.ai/artifact/6ziCfiwDLVMxvY9QeWfSai
 
 ## Estrutura
 
@@ -12,6 +13,7 @@ Versão publicada: https://claude.ai/artifact/6ziCfiwDLVMxvY9QeWfSai
 | `data/Movies.xlsx` | planilha original |
 | `scripts/` | pipeline em Python (só biblioteca padrão, exceto `trailers.py`) |
 | `*.json` | dados intermediários de cada etapa |
+| `trailers.yt` | `<id do filme> <id do vídeo no YouTube>` — de onde cada trailer foi baixado |
 | `assets.map` | `<id do filme> <bytes> <asset id>` — trailers enviados como assets do Artifact |
 | `site/template.html` | código-fonte da página (`__DATA__` recebe os dados) |
 | `site/cinemateca.html` | página final |
@@ -34,5 +36,5 @@ python3 scripts/finalize.py .      # monta site/cinemateca.html
 
 ## Trailers
 
-Os MP4 (~700 MB, 360p) não estão no git. A página os carrega de `/_blob/<asset id>`, que só existe no Artifact publicado.
-Aberta fora dele, os vídeos não tocam; o resto da página funciona.
+Os MP4 (~700 MB, 360p) não estão no git. No Artifact a página os carrega de `/_blob/<asset id>`.
+No GitHub Pages (ou abrindo o arquivo localmente) esses caminhos não existem, então o trailer é embutido do YouTube, a partir do mesmo vídeo de origem (`trailers.yt`).

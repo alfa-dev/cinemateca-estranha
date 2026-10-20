@@ -197,6 +197,59 @@ dialog{width:min(980px,calc(100vw - 24px))}
   .pop{position:fixed;inset:auto 0 0 0!important;width:auto;border-radius:16px 16px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
   .opts{max-height:55vh}
 }
+/* Hero: destaques em rodízio, trailer mudo ao fundo; a barra de progresso da miniatura é o relógio do rodízio */
+/* tela de cinema: sempre escura, mesmo no tema claro */
+.hero{--bg:#121019;--fg:#eeeaf4;--muted:#b4adc4;--surface:#1b1824;--raise:#252131;--line:#3a3448;--accent:#f4a640;--on-accent:#1a1206;color-scheme:dark;color:var(--fg);position:relative;overflow:hidden;isolation:isolate;min-height:clamp(460px,66vh,680px);display:flex;align-items:flex-end;background:var(--bg)}
+.hero[hidden]{display:none}
+.hero-bg{position:absolute;inset:0;z-index:-2;container-type:size;background:#000}
+.hero-layer{position:absolute;inset:0;opacity:0;transition:opacity .9s}
+.hero-layer.on{opacity:1}
+.hero-layer>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(28px) saturate(1.3) brightness(.8);transform:scale(1.25)}
+.hero-layer video,.hero-layer iframe{position:absolute;opacity:0;transition:opacity 1.2s;border:0;pointer-events:none}
+.hero-layer video{inset:0;width:100%;height:100%;object-fit:cover}
+.hero-layer iframe{top:50%;left:50%;width:max(100cqw,177.78cqh);height:max(56.25cqw,100cqh);translate:-50% -50%;scale:1.18}
+.hero-layer .ready{opacity:1}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:
+  linear-gradient(to top,var(--bg) 0%,color-mix(in srgb,var(--bg) 70%,transparent) 28%,transparent 62%),
+  linear-gradient(to right,color-mix(in srgb,var(--bg) 88%,transparent) 0%,color-mix(in srgb,var(--bg) 35%,transparent) 45%,transparent 70%)}
+.hero-in{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:end;padding-block:48px 28px;width:100%;box-sizing:border-box}
+.hero-info{max-width:640px;animation:heroIn .7s both}
+@keyframes heroIn{from{opacity:0;translate:0 14px}}
+.hero-kick{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.hero-kick span{width:8px;height:8px;border-radius:50%;background:var(--d)}
+.hero h2{font:900 clamp(48px,8.5vw,112px)/.84 var(--display);text-transform:uppercase;margin:12px 0 0;text-wrap:balance;overflow-wrap:anywhere;letter-spacing:-.005em}
+.hero-aka{color:var(--muted);font-size:14px;margin-top:8px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:14px;font-size:15px}
+.hero-meta span:not(:last-child)::after{content:"·";margin-left:14px;color:var(--muted)}
+.hero-watch{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;font-size:14px;color:var(--muted)}
+.hero-watch a{color:var(--fg);font-weight:600;text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:3px 10px;background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.hero-watch a:hover{background:var(--accent);color:var(--on-accent)}
+.hero-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.hero-side{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.hero-ctrl{display:flex;gap:6px}
+.hbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 80%,transparent);color:var(--fg);display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(6px)}
+.hbtn:hover{border-color:var(--muted)}
+.hbtn svg{width:16px;height:16px;fill:currentColor}
+.hero-thumbs{display:flex;gap:8px}
+.hthumb{position:relative;width:62px;aspect-ratio:2/3;padding:0;border:0;border-radius:6px;overflow:hidden;cursor:pointer;background:var(--raise);opacity:.5;transition:opacity .2s,translate .2s;box-shadow:var(--shadow)}
+.hthumb:hover{opacity:.85}
+.hthumb[aria-current="true"]{opacity:1;translate:0 -6px;outline:2px solid var(--accent);outline-offset:2px}
+.hthumb img,.hthumb .gen{width:100%;height:100%;object-fit:cover;display:block}
+.hthumb .gen b{font-size:11px!important}
+.hthumb .gen span{display:none}
+.hthumb i{position:absolute;left:0;bottom:0;height:3px;width:0;background:var(--accent)}
+.hthumb[aria-current="true"] i{animation:heroProg var(--dur,18s) linear forwards}
+.hero.paused .hthumb i{animation-play-state:paused}
+@keyframes heroProg{to{width:100%}}
+@media (max-width:760px){
+  .hero{min-height:auto}
+  .hero-in{grid-template-columns:minmax(0,1fr);padding-top:180px;gap:18px}
+  .hero-side{flex-direction:row-reverse;justify-content:space-between;align-items:center}
+  .hero-thumbs{overflow-x:auto;padding:8px 2px 2px;scrollbar-width:none;flex:1;min-width:0}
+  .hero-ctrl{flex:none}
+  .hthumb{width:44px;flex:none}
+}
+@media (prefers-reduced-motion:reduce){.hero-info{animation:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -214,6 +267,20 @@ dialog{width:min(980px,calc(100vw - 24px))}
     </div>
   </div>
 </header>
+
+<section class="hero" id="hero" aria-roledescription="carrossel" aria-label="Filmes em destaque" hidden>
+  <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
+  <div class="wrap hero-in">
+    <div class="hero-info" id="heroInfo" aria-live="polite"></div>
+    <div class="hero-side">
+      <div class="hero-ctrl">
+        <button class="hbtn" id="heroMute" type="button"></button>
+        <button class="hbtn" id="heroPause" type="button"></button>
+      </div>
+      <div class="hero-thumbs" id="heroThumbs"></div>
+    </div>
+  </div>
+</section>
 
 <div class="wrap">
   <nav class="cats" id="cats" aria-label="Sessões"></nav>
@@ -375,7 +442,7 @@ $("pop").addEventListener("beforetoggle", e=>{
 });
 addEventListener("resize", positionPop); addEventListener("scroll", positionPop, {passive:true});
 function render(){
-  renderCats(); renderFilters(); renderOpts();
+  renderCats(); renderFilters(); renderOpts(); renderHero();
   const list = sorted(MOVIES.filter(m=>matches(m)));
   const active = state.q || FACETS.some(f=>state.sel[f.k].size);
   $("reset").hidden = !active;
@@ -422,7 +489,7 @@ function openMovie(m, play){
       </div>
       <div class="note">${hasTrailer(m)?"O trailer toca aqui mesmo.":"Este filme não tem trailer salvo; a busca abre no YouTube."} Disponibilidade no Brasil segundo o JustWatch, outubro de 2026.</div>
     </div></div>`;
-  const d=$("dlg"); if(!d.open) d.showModal(); d.scrollTop=0;
+  const d=$("dlg"); if(!d.open) d.showModal(); d.scrollTop=0; heroApply();
   const v=$("vid"), startTrailer=()=>{ $("stage").hidden=false; if(EMBED){ if(!v.src) v.src=`https://www.youtube-nocookie.com/embed/${m.ytt}?autoplay=1&rel=0`; } else v.play().catch(()=>{}); d.scrollTop=0; };
   if(v){ $("playBtn").onclick=startTrailer; if(play) startTrailer(); }
 }
@@ -447,7 +514,107 @@ document.addEventListener("click", e=>{
   if (t.dataset.s){ state.sort=t.dataset.s; try{localStorage.setItem("cine-sort",JSON.stringify(state.sort))}catch(_){} render(); }
 });
 $("dlg").addEventListener("click", e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
-$("dlg").addEventListener("close", ()=>{ const v=$("vid"); if(v){ if(EMBED) v.remove(); else { v.pause(); v.removeAttribute("src"); v.load(); } } });
+$("dlg").addEventListener("close", ()=>{ heroApply(); const v=$("vid"); if(v){ if(EMBED) v.remove(); else { v.pause(); v.removeAttribute("src"); v.load(); } } });
+// ---- Hero: destaques com trailer mudo ao fundo ----
+const FEATURED = ["tt0076162","tt0082933","tt0071615","tt1441395","tt0074486","tt0076786","tt3908142","tt7984734","tt1191111","tt0013257","tt0083931","tt0067866","tt5278832","tt0079944"];
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const hero = {list:[], i:0, key:null, paused:RM, muted:true, visible:true, nPosters:-1};
+const ICON = {
+  pause:`<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>`,
+  play:`<svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>`,
+  muted:`<svg viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3zM16 9l5 6m0-6-5 6" stroke="currentColor" stroke-width="2" fill-rule="evenodd"/></svg>`,
+  sound:`<svg viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none"/></svg>`,
+};
+const shuffle = l => { for(let i=l.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [l[i],l[j]]=[l[j],l[i]]; } return l; };
+function heroPick(){
+  const ok = m => hasTrailer(m) && m.poster && (state.cat==="all" || m.cats.includes(state.cat));
+  const l = shuffle(MOVIES.filter(m=>ok(m) && FEATURED.includes(m.id)));
+  if(l.length<6) l.push(...shuffle(MOVIES.filter(m=>ok(m) && !l.includes(m))).slice(0, 6-l.length));
+  return l.slice(0,6);
+}
+function renderHero(){
+  const filtering = state.q || FACETS.some(f=>state.sel[f.k].size);
+  $("hero").hidden = !!filtering;
+  if(filtering){ hero.key=null; $("heroBg").innerHTML=""; return; }
+  if(hero.key===state.cat){ heroCovers(); return; }
+  hero.key=state.cat; hero.list=heroPick(); hero.nPosters=-1;
+  if(!hero.list.length){ $("hero").hidden=true; return; }
+  $("heroThumbs").innerHTML = hero.list.map((m,k)=>`<button class="hthumb" type="button" data-h="${k}" aria-label="Destaque ${k+1}: ${esc(m.title)}"><span class="th"></span><i></i></button>`).join("");
+  heroCovers(); heroShow(0);
+}
+// capas chegam depois (posters.json); preenche sem recriar os botões, para não reiniciar a barra de progresso
+function heroCovers(){
+  const n=Object.keys(POSTERS).length; if(n===hero.nPosters) return; hero.nPosters=n;
+  document.querySelectorAll("#heroThumbs .hthumb").forEach(b=>{ b.querySelector(".th").innerHTML=coverHTML(hero.list[+b.dataset.h]); });
+  const img=document.querySelector("#heroBg .hero-layer:last-child > img"), m=hero.list[hero.i];
+  if(img && !img.getAttribute("src") && POSTERS[m.id]) img.src=POSTERS[m.id];
+}
+// links diretos: primeiro assinatura/grátis; sem isso, aluguel/compra; sem nada, o filme completo no YouTube
+function heroWatch(m){
+  const w=m.watch||[], free=w.filter(o=>o.t==="Assinatura"||o.t.startsWith("Grátis")), paid=w.filter(o=>o.t==="Aluguel"||o.t==="Compra");
+  const uniq=l=>l.filter((o,k)=>l.findIndex(x=>x.n===o.n)===k).slice(0,4);
+  const links=l=>uniq(l).map(o=>`<a href="${esc(o.u)}" target="_blank" rel="noopener">${esc(o.n)}</a>`).join("");
+  if(free.length) return `<div class="hero-watch"><span>Assista em</span>${links(free)}</div>`;
+  if(paid.length) return `<div class="hero-watch"><span>Alugue ou compre em</span>${links(paid)}</div>`;
+  if(m.flags.includes("Completo no YouTube")) return `<div class="hero-watch"><span>Assista em</span><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(m.title+" "+(m.year||"")+" full movie")}" target="_blank" rel="noopener">YouTube</a></div>`;
+  return "";
+}
+function heroShow(i){
+  hero.i=i; const m=hero.list[i], c=state.cat==="all"?m.cats[0]:state.cat;
+  const meta=[m.year, m.directors[0], m.countries.slice(0,2).join(", "), m.genres.slice(0,2).join(", ")].filter(Boolean);
+  $("heroInfo").innerHTML = `<div class="hero-kick"><span style="--d:var(--c-${c})"></span>Em destaque · ${esc(CAT[c].name)}</div>
+    <h2>${esc(m.title)}</h2>${m.aka[0]?`<div class="hero-aka">${esc(m.aka[0])}</div>`:""}
+    <div class="hero-meta">${meta.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
+    ${heroWatch(m)}
+    <div class="hero-actions"><button class="btn primary" type="button" data-hopen="play">${ICON.play}Ver trailer com som</button><button class="btn" type="button" data-hopen>Ficha do filme</button></div>`;
+  // reinicia a animação de entrada do texto
+  const info=$("heroInfo"); info.style.animation="none"; info.offsetWidth; info.style.animation="";
+  document.querySelectorAll("#heroThumbs .hthumb").forEach(b=>{
+    const on=+b.dataset.h===i; b.setAttribute("aria-current",on);
+    if(on){ const bar=document.createElement("i"); b.querySelector("i").replaceWith(bar); b.scrollIntoView({block:"nearest",inline:"nearest"}); }
+  });
+  const layer=document.createElement("div"); layer.className="hero-layer";
+  layer.innerHTML=`<img alt="" ${POSTERS[m.id]?`src="${POSTERS[m.id]}"`:""}>`;
+  $("heroBg").append(layer);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>layer.classList.add("on")));
+  setTimeout(()=>{ [...$("heroBg").children].slice(0,-1).forEach(x=>x.remove()); }, 1000);
+  heroApply();
+}
+function heroMedia(layer, m){
+  if(EMBED){
+    const f=document.createElement("iframe");
+    f.src=`https://www.youtube-nocookie.com/embed/${m.ytt}?autoplay=1&mute=1&controls=0&loop=1&playlist=${m.ytt}&start=6&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1`;
+    f.allow="autoplay; encrypted-media"; f.tabIndex=-1; f.title="";
+    f.onload=()=>setTimeout(()=>{ f.classList.add("ready"); heroApply(); }, 1400);
+    layer.append(f); return f;
+  }
+  const v=document.createElement("video");
+  Object.assign(v,{muted:true,loop:true,playsInline:true,preload:"auto",src:m.tr});
+  v.addEventListener("loadedmetadata", ()=>{ v.currentTime=Math.min(12, v.duration*.12); }, {once:true});
+  v.addEventListener("playing", ()=>v.classList.add("ready"), {once:true});
+  layer.append(v); return v;
+}
+const ytCmd = (f, func) => f.contentWindow?.postMessage(JSON.stringify({event:"command",func,args:[]}), "*");
+function heroApply(){
+  const run = !hero.paused && hero.visible && !document.hidden && !$("dlg").open && !$("hero").hidden;
+  $("hero").classList.toggle("paused", !run);
+  const layer=$("heroBg").lastElementChild;
+  if(layer && run && !layer.querySelector("video,iframe")) heroMedia(layer, hero.list[hero.i]);
+  const el=layer?.querySelector("video,iframe");
+  if(el?.tagName==="VIDEO"){ el.muted=hero.muted; run ? el.play().catch(()=>{}) : el.pause(); }
+  else if(el){ ytCmd(el, run?"playVideo":"pauseVideo"); ytCmd(el, hero.muted?"mute":"unMute"); }
+  $("heroPause").innerHTML = hero.paused?ICON.play:ICON.pause;
+  $("heroPause").setAttribute("aria-label", hero.paused?"Retomar destaques":"Pausar destaques");
+  $("heroMute").innerHTML = hero.muted?ICON.muted:ICON.sound;
+  $("heroMute").setAttribute("aria-label", hero.muted?"Ativar som do trailer":"Silenciar trailer");
+}
+$("heroThumbs").addEventListener("animationend", e=>{ if(e.animationName==="heroProg") heroShow((hero.i+1)%hero.list.length); });
+$("heroThumbs").addEventListener("click", e=>{ const b=e.target.closest("[data-h]"); if(!b) return; if(!RM) hero.paused=false; heroShow(+b.dataset.h); });
+$("heroInfo").addEventListener("click", e=>{ const b=e.target.closest("[data-hopen]"); if(b) openMovie(hero.list[hero.i], b.dataset.hopen==="play"); });
+$("heroPause").onclick=()=>{ hero.paused=!hero.paused; heroApply(); };
+$("heroMute").onclick=()=>{ hero.muted=!hero.muted; heroApply(); };
+new IntersectionObserver(([e])=>{ hero.visible=e.isIntersecting; heroApply(); }, {threshold:.25}).observe($("hero"));
+document.addEventListener("visibilitychange", heroApply);
 let qt; $("q").addEventListener("input", e=>{ clearTimeout(qt); qt=setTimeout(()=>{state.q=e.target.value.trim(); render();},90); });
 $("clear").onclick=()=>{ $("q").value=""; state.q=""; render(); $("q").focus(); };
 $("reset").onclick=()=>{ $("q").value=""; state.q=""; FACETS.forEach(f=>state.sel[f.k].clear()); render(); };

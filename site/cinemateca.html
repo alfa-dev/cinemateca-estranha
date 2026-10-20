@@ -1,3 +1,7 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Cinemateca Estranha</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -163,11 +167,13 @@ dialog{width:min(980px,calc(100vw - 24px))}
 .fbtn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px 7px 14px;font-size:14px;font-weight:500;cursor:pointer;max-width:100%}
 .fbtn:hover{border-color:var(--muted)}
 .fbtn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;opacity:.7;transition:rotate .15s}
-.fbtn[aria-expanded="true"]{border-color:var(--fg)}
+.fbtn[aria-expanded="true"]{border-color:var(--fg);anchor-name:--fbtn}
 .fbtn[aria-expanded="true"] svg{rotate:180deg}
 .fbtn.on{border-color:var(--accent);color:var(--accent)}
 .fbtn b{background:var(--accent);color:var(--on-accent);font:600 11px var(--mono);border-radius:999px;padding:1px 6px}
-.pop{position:absolute;z-index:6;width:min(340px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px;display:flex;flex-direction:column;gap:8px}
+.pop{position:fixed;inset:auto;margin:0;width:min(340px,calc(100vw - 32px));background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px;flex-direction:column;gap:8px;overflow:visible}
+.pop:popover-open{display:flex}
+@supports (top:anchor(bottom)){.pop{position-anchor:--fbtn;top:calc(anchor(bottom) + 8px);left:anchor(left);position-try-fallbacks:flip-inline,flip-block}}
 .pop-head{display:flex;justify-content:space-between;align-items:baseline;padding:2px 6px}
 .pop-head b{font:700 18px var(--display);text-transform:uppercase;letter-spacing:.03em}
 .pop-head button{border:0;background:none;color:var(--accent);font-weight:600;font-size:13px;cursor:pointer}
@@ -188,7 +194,7 @@ dialog{width:min(980px,calc(100vw - 24px))}
 .achip span{opacity:.7}
 .achip em{font-style:normal;font-weight:400;opacity:.75}
 @media (max-width:640px){
-  .pop{position:fixed;left:0!important;right:0;top:auto!important;bottom:0;width:auto;border-radius:16px 16px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .pop{position:fixed;inset:auto 0 0 0!important;width:auto;border-radius:16px 16px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
   .opts{max-height:55vh}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -213,7 +219,7 @@ dialog{width:min(980px,calc(100vw - 24px))}
   <nav class="cats" id="cats" aria-label="Sessões"></nav>
   <div class="fwrap" id="fwrap">
     <div class="filterbar" id="filters" role="toolbar" aria-label="Filtros"></div>
-    <div class="pop" id="pop" role="dialog" aria-modal="false" hidden>
+    <div class="pop" id="pop" popover role="dialog" aria-labelledby="popTitle">
       <div class="pop-head"><b id="popTitle"></b><button type="button" id="popClear">Limpar</button></div>
       <input id="popq" type="search" placeholder="Filtrar a lista…" autocomplete="off" aria-label="Filtrar opções">
       <div class="opts" id="opts"></div>
@@ -321,7 +327,7 @@ function renderFilters(){
   $("filters").innerHTML = FACETS.map(f=>{
     const sel=[...state.sel[f.k]], n=sel.length;
     const label = f.single && n ? sel[0] : f.name;
-    return `<button class="fbtn ${n?"on":""}" type="button" data-facet="${f.k}" aria-haspopup="true" aria-expanded="${state.pop===f.k}">${esc(label)}${!f.single&&n?`<b>${n}</b>`:""}${caret}</button>`;
+    return `<button class="fbtn ${n?"on":""}" type="button" data-facet="${f.k}" aria-haspopup="dialog" aria-controls="pop" aria-expanded="${state.pop===f.k}">${esc(label)}${!f.single&&n?`<b>${n}</b>`:""}${caret}</button>`;
   }).join("");
   const chips = FACETS.flatMap(f=>[...state.sel[f.k]].map(v=>`<button class="achip" type="button" data-f="${f.k}" data-v="${esc(v)}" title="Remover filtro"><em>${f.name}:</em> ${esc(v)} <span aria-hidden="true">×</span></button>`));
   $("active").innerHTML = chips.join("");
@@ -338,21 +344,36 @@ function renderOpts(){
     return `<button class="opt" type="button" role="${f.single?"radio":"checkbox"}" aria-checked="${on}" data-f="${f.k}" data-v="${esc(v)}"><span class="box"></span><span class="l">${esc(v)}</span><i>${n}</i></button>`;
   }).join("") : `<div class="none">Nenhuma opção encontrada.</div>`;
 }
+// o popover se ancora no botão via CSS anchor positioning; sem suporte, posiciona à mão
+const ANCHOR = CSS.supports("top","anchor(bottom)");
 function positionPop(){
-  const b=document.querySelector(`.fbtn[data-facet="${state.pop}"]`), pop=$("pop"), wrap=$("fwrap");
+  if(ANCHOR || !state.pop || matchMedia("(max-width:640px)").matches) return;
+  const b=document.querySelector(`.fbtn[data-facet="${state.pop}"]`), pop=$("pop");
   if(!b) return;
-  const maxLeft = wrap.clientWidth - pop.offsetWidth;
-  pop.style.left = Math.max(0, Math.min(b.offsetLeft, maxLeft)) + "px";
-  pop.style.top = (b.offsetTop + b.offsetHeight + 8) + "px";
+  const r=b.getBoundingClientRect();
+  pop.style.left = Math.max(16, Math.min(r.left, innerWidth - pop.offsetWidth - 16)) + "px";
+  pop.style.top = (r.bottom + 8) + "px";
 }
 function openPop(k){
   state.pop=k; const f=FACETS.find(x=>x.k===k);
   $("popTitle").textContent=f.name; $("popq").value="";
   $("popq").hidden = facetEntries(f).length <= 12;
-  $("pop").hidden=false; renderFilters(); renderOpts(); $("opts").scrollTop=0;
+  setExpanded(); renderOpts();
+  const pop=$("pop"), b=document.querySelector(`.fbtn[data-facet="${k}"]`);
+  if(!pop.matches(":popover-open")){ try{ pop.showPopover({source:b}); }catch(_){ pop.showPopover(); } }
+  positionPop(); $("opts").scrollTop=0;
   if(!$("popq").hidden && matchMedia("(hover:hover)").matches) $("popq").focus();
 }
-function closePop(){ if(!state.pop) return; state.pop=null; $("pop").hidden=true; renderFilters(); }
+function closePop(){ if(state.pop) $("pop").hidePopover(); }
+// só troca aria-expanded: recriar os botões entre pointerdown e click faria o clique se perder
+function setExpanded(){ document.querySelectorAll(".fbtn").forEach(b=>b.setAttribute("aria-expanded", b.dataset.facet===state.pop)); }
+// light dismiss e Esc fecham o popover sozinhos (e devolvem o foco); o estado acompanha pelo beforetoggle
+let closedAt={k:null,t:0};
+$("pop").addEventListener("beforetoggle", e=>{
+  if(e.newState!=="closed") return;
+  closedAt={k:state.pop,t:performance.now()}; state.pop=null; setExpanded();
+});
+addEventListener("resize", positionPop); addEventListener("scroll", positionPop, {passive:true});
 function render(){
   renderCats(); renderFilters(); renderOpts();
   const list = sorted(MOVIES.filter(m=>matches(m)));
@@ -407,9 +428,12 @@ function openMovie(m, play){
 }
 
 document.addEventListener("click", e=>{
-  if (state.pop && !e.target.closest("#pop") && !e.target.closest(".fbtn") && !e.target.closest(".achip")) closePop();
   const t=e.target.closest("button,a"); if(!t) return;
-  if (t.dataset.facet){ state.pop===t.dataset.facet ? closePop() : openPop(t.dataset.facet); return; }
+  if (t.dataset.facet){
+    const k=t.dataset.facet;
+    // sem invoker nativo, o pointerdown no próprio botão já fechou por light dismiss: não reabre
+    if(closedAt.k===k && performance.now()-closedAt.t<400) return;
+    state.pop===k ? closePop() : openPop(k); return; }
   if (t.dataset.close!==undefined && t.closest("dialog")) $("dlg").close();
   if (t.classList.contains("card")) return openMovie(MOVIES[+t.dataset.i], !!e.target.closest(".play"));
   if (t.dataset.c){ state.cat = (t.classList.contains("catpill")||state.cat!==t.dataset.c)?t.dataset.c:"all"; try{history.replaceState(null,"",state.cat==="all"?location.pathname:"#"+state.cat)}catch(_){} render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
@@ -430,7 +454,6 @@ $("reset").onclick=()=>{ $("q").value=""; state.q=""; FACETS.forEach(f=>state.se
 $("random").onclick=()=>{ const l=MOVIES.filter(m=>matches(m)); const pool=l.length?l:MOVIES; openMovie(pool[Math.floor(Math.random()*pool.length)]); };
 $("popq").addEventListener("input", renderOpts);
 $("popClear").onclick=()=>{ state.sel[state.pop].clear(); render(); };
-document.addEventListener("keydown", e=>{ if(e.key==="Escape" && state.pop){ const k=state.pop; closePop(); document.querySelector(`.fbtn[data-facet="${k}"]`)?.focus(); } });
 document.addEventListener("keydown", e=>{ if(e.key==="/" && document.activeElement!==$("q") && !$("dlg").open){ e.preventDefault(); $("q").focus(); } });
 $("tagline").textContent = `${MOVIES.length} filmes de culto · ${new Set(MOVIES.flatMap(m=>m.countries)).size} países · 5 sessões`;
 

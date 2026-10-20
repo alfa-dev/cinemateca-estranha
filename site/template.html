@@ -207,7 +207,7 @@ dialog{width:min(980px,calc(100vw - 24px))}
 .hero-layer>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(28px) saturate(1.3) brightness(.8);transform:scale(1.25)}
 .hero-layer video,.hero-layer iframe{position:absolute;opacity:0;transition:opacity 1.2s;border:0;pointer-events:none}
 .hero-layer video{inset:0;width:100%;height:100%;object-fit:cover}
-.hero-layer iframe{top:50%;left:50%;width:max(100cqw,177.78cqh);height:max(56.25cqw,100cqh);translate:-50% -50%;scale:1.18}
+.hero-layer iframe{top:50%;left:50%;width:max(100cqw,177.78cqh);height:max(56.25cqw,100cqh);translate:-50% -50%;scale:1.4}
 .hero-layer .ready{opacity:1}
 .hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:
   linear-gradient(to top,var(--bg) 0%,color-mix(in srgb,var(--bg) 70%,transparent) 28%,transparent 62%),
@@ -585,7 +585,7 @@ function heroMedia(layer, m){
     const f=document.createElement("iframe");
     f.src=`https://www.youtube-nocookie.com/embed/${m.ytt}?autoplay=1&mute=1&controls=0&loop=1&playlist=${m.ytt}&start=6&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1`;
     f.allow="autoplay; encrypted-media"; f.tabIndex=-1; f.title="";
-    f.onload=()=>setTimeout(()=>{ f.classList.add("ready"); heroApply(); }, 1400);
+    f.onload=()=>{ f.contentWindow.postMessage(JSON.stringify({event:"listening",id:m.ytt,channel:"widget"}),"*"); heroApply(); };
     layer.append(f); return f;
   }
   const v=document.createElement("video");
@@ -594,6 +594,18 @@ function heroMedia(layer, m){
   v.addEventListener("playing", ()=>v.classList.add("ready"), {once:true});
   layer.append(v); return v;
 }
+// o vídeo do YouTube só aparece depois de alguns segundos tocando (quando o título já sumiu)
+// e some ao pausar, carregar ou terminar, para a interface do player nunca ficar à vista
+addEventListener("message", e=>{
+  if(!/youtube(-nocookie)?\.com$/.test(new URL(e.origin).hostname)) return;
+  let d; try{ d=JSON.parse(e.data); }catch(_){ return; }
+  const st = d.event==="onStateChange" ? d.info : d.info?.playerState;
+  if(st===undefined) return;
+  const f=[...document.querySelectorAll("#heroBg iframe")].find(x=>x.contentWindow===e.source); if(!f) return;
+  clearTimeout(f._reveal);
+  if(st===1) f._reveal=setTimeout(()=>f.classList.add("ready"), 3500);
+  else f.classList.remove("ready");
+});
 const ytCmd = (f, func) => f.contentWindow?.postMessage(JSON.stringify({event:"command",func,args:[]}), "*");
 function heroApply(){
   const run = !hero.paused && hero.visible && !document.hidden && !$("dlg").open && !$("hero").hidden;

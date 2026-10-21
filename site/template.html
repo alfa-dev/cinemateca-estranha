@@ -199,7 +199,8 @@ dialog{width:min(980px,calc(100vw - 24px))}
 }
 /* Hero: destaques em rodízio, trailer mudo ao fundo; a barra de progresso da miniatura é o relógio do rodízio */
 /* tela de cinema: sempre escura, mesmo no tema claro */
-.hero{--bg:#121019;--fg:#eeeaf4;--muted:#b4adc4;--surface:#1b1824;--raise:#252131;--line:#3a3448;--accent:#f4a640;--on-accent:#1a1206;color-scheme:dark;color:var(--fg);position:relative;overflow:hidden;isolation:isolate;min-height:clamp(460px,66vh,680px);display:flex;align-items:flex-end;background:var(--bg)}
+.hero,.sband{--bg:#121019;--fg:#eeeaf4;--muted:#b4adc4;--surface:#1b1824;--raise:#252131;--line:#3a3448;--accent:#f4a640;--on-accent:#1a1206;color-scheme:dark;color:var(--fg)}
+.hero{position:relative;overflow:hidden;isolation:isolate;min-height:clamp(460px,66vh,680px);display:flex;align-items:flex-end;background:var(--bg)}
 .hero[hidden]{display:none}
 /* ao rolar, a hero sobe até sobrar só a faixa (--band) e gruda sob o cabeçalho; --p vai de 0 (cheia) a 1 (faixa) */
 .hero{--band:128px;position:sticky;z-index:4}
@@ -209,6 +210,8 @@ dialog{width:min(980px,calc(100vw - 24px))}
 .hero.stuck .hero-in{visibility:hidden}
 .hero::before{content:"";position:absolute;inset:auto 0 0;height:var(--band);z-index:-1;pointer-events:none;opacity:calc((var(--p,0) - .6)*2.5);background:linear-gradient(to right,color-mix(in srgb,var(--bg) 82%,transparent) 0%,color-mix(in srgb,var(--bg) 35%,transparent) 55%,color-mix(in srgb,var(--bg) 15%,transparent));border-bottom:1px solid var(--line)}
 .hero.stuck::after{opacity:0}
+/* coberta pela faixa de uma sessão: some, para não aparecer no vão entre uma faixa e outra */
+.hero.covered{visibility:hidden}
 .hero::after{transition:opacity .35s}
 .hero-mini{position:absolute;inset:auto 0 0;height:var(--band);box-sizing:border-box;display:flex;align-items:center;gap:16px;opacity:calc((var(--p,0) - .75)*4);visibility:hidden}
 .hero.stuck .hero-mini,.hero-mini:focus-within{visibility:visible}
@@ -263,7 +266,7 @@ dialog{width:min(980px,calc(100vw - 24px))}
   .hero-thumbs{overflow-x:auto;padding:8px 2px 2px;scrollbar-width:none;flex:1;min-width:0}
   .hero-ctrl{flex:none}
   .hthumb{width:44px;flex:none}
-  .hero{--band:96px}
+  .hero,.sband{--band:96px}
   .hero-mini{gap:10px}
   .hero-mini .acts .btn:not(.primary){display:none}
   .hero-mini .acts .btn.primary{padding:0;width:38px;height:38px;justify-content:center}
@@ -272,6 +275,12 @@ dialog{width:min(980px,calc(100vw - 24px))}
   .hero-mini .t b{font-size:26px}
 }
 @media (prefers-reduced-motion:reduce){.hero-info{animation:none}}
+/* Faixa de cada sessão (na visão de todas): o formato da hero recolhida, grudada sob o cabeçalho enquanto a sessão passa */
+body{overflow-x:clip}
+.sband{--band:128px;position:sticky;top:var(--hdr,0px);z-index:4;height:var(--band);margin:0 calc(50% - 50vw) 20px;overflow:hidden;isolation:isolate;background:var(--bg);border-bottom:1px solid var(--line)}
+.sband::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(to right,color-mix(in srgb,var(--bg) 82%,transparent) 0%,color-mix(in srgb,var(--bg) 35%,transparent) 55%,color-mix(in srgb,var(--bg) 15%,transparent))}
+.sband .hero-mini{opacity:1;visibility:visible}
+.hero-mini .t small span{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--d);margin-right:8px;vertical-align:1px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -475,9 +484,12 @@ function render(){
   const main=$("main");
   if(!list.length){ main.innerHTML=`<div class="empty"><b>Nada na tela</b>Nenhum filme combina com a busca e as tags escolhidas. Tente remover uma tag.</div>`; return; }
   const groups = state.cat==="all" ? CATS.map(c=>({c, items:list.filter(m=>m.cats.includes(c.id))})).filter(g=>g.items.length) : [{c:CAT[state.cat], items:list}];
+  const banded = state.cat==="all" && !active;
   main.innerHTML = groups.map(({c,items})=>`<section class="section" style="--dot:var(--c-${c.id})">
-      <div class="section-head"><h2>${esc(c.name)}</h2><span class="n">${items.length}</span><p>${esc(c.desc)}</p></div>
+      ${banded?bandHTML(c):""}<div class="section-head"><h2>${esc(c.name)}</h2><span class="n">${items.length}</span><p>${esc(c.desc)}</p></div>
       <div class="grid">${items.map(cardHTML).join("")}</div></section>`).join("");
+  bandIO.disconnect(); document.querySelectorAll(".sband").forEach(el=>bandIO.observe(el));
+  stickSoon(); bandsApply();
 }
 
 // fora do Artifact (GitHub Pages, arquivo local) os /_blob/ não existem: o trailer vem embutido do YouTube
@@ -512,7 +524,7 @@ function openMovie(m, play){
       </div>
       <div class="note">${hasTrailer(m)?"O trailer toca aqui mesmo.":"Este filme não tem trailer salvo; a busca abre no YouTube."} Disponibilidade no Brasil segundo o JustWatch, outubro de 2026.</div>
     </div></div>`;
-  const d=$("dlg"); if(!d.open) d.showModal(); d.scrollTop=0; heroApply();
+  const d=$("dlg"); if(!d.open) d.showModal(); d.scrollTop=0; stripsApply();
   const v=$("vid"), startTrailer=()=>{ $("stage").hidden=false; if(EMBED){ if(!v.src) v.src=`https://www.youtube-nocookie.com/embed/${m.ytt}?autoplay=1&rel=0`; } else v.play().catch(()=>{}); d.scrollTop=0; };
   if(v){ $("playBtn").onclick=startTrailer; if(play) startTrailer(); }
 }
@@ -537,11 +549,11 @@ document.addEventListener("click", e=>{
   if (t.dataset.s){ state.sort=t.dataset.s; try{localStorage.setItem("cine-sort",JSON.stringify(state.sort))}catch(_){} render(); }
 });
 $("dlg").addEventListener("click", e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
-$("dlg").addEventListener("close", ()=>{ heroApply(); const v=$("vid"); if(v){ if(EMBED) v.remove(); else { v.pause(); v.removeAttribute("src"); v.load(); } } });
+$("dlg").addEventListener("close", ()=>{ stripsApply(); const v=$("vid"); if(v){ if(EMBED) v.remove(); else { v.pause(); v.removeAttribute("src"); v.load(); } } });
 // ---- Hero: destaques com trailer mudo ao fundo ----
 const FEATURED = ["tt0076162","tt0082933","tt0071615","tt1441395","tt0074486","tt0076786","tt3908142","tt7984734","tt1191111","tt0013257","tt0083931","tt0067866","tt5278832","tt0079944"];
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const hero = {list:[], i:0, key:null, paused:RM, muted:true, visible:true, nPosters:-1};
+const hero = {list:[], i:0, key:null, paused:RM, muted:true, visible:true, covered:false, nPosters:-1};
 const ICON = {
   pause:`<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>`,
   play:`<svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>`,
@@ -591,9 +603,7 @@ function heroShow(i){
     <div class="hero-meta">${meta.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
     ${heroWatch(m)}
     <div class="hero-actions"><button class="btn primary" type="button" data-hopen="play">${ICON.play}Ver trailer com som</button><button class="btn" type="button" data-hopen>Ficha do filme</button></div>`;
-  $("heroMini").innerHTML = `<button class="t" type="button" data-hopen><small>Em destaque · ${esc(meta.slice(0,2).join(" · "))}</small><b>${esc(m.title)}</b></button>
-    <div class="acts"><button class="btn primary" type="button" data-hopen="play" aria-label="Ver trailer com som">${ICON.play}<span>Trailer</span></button><button class="btn" type="button" data-hopen>Ficha</button>
-    <button class="hbtn" data-hctl="mute" type="button"></button><button class="hbtn" data-hctl="pause" type="button"></button></div>`;
+  $("heroMini").innerHTML = miniHTML(m, `Em destaque · ${esc(meta.slice(0,2).join(" · "))}`);
   // reinicia a animação de entrada do texto
   const info=$("heroInfo"); info.style.animation="none"; info.offsetWidth; info.style.animation="";
   document.querySelectorAll("#heroThumbs .hthumb").forEach(b=>{
@@ -607,12 +617,16 @@ function heroShow(i){
   setTimeout(()=>{ [...$("heroBg").children].slice(0,-1).forEach(x=>x.remove()); }, 1000);
   heroApply();
 }
+// conteúdo da faixa (hero recolhida e faixas das sessões): kick já escapado, título, trailer, ficha, som e pausa
+const miniHTML = (m, kick) => `<button class="t" type="button" data-hopen><small>${kick}</small><b>${esc(m.title)}</b></button>
+    <div class="acts"><button class="btn primary" type="button" data-hopen="play" aria-label="Ver trailer com som">${ICON.play}<span>Trailer</span></button><button class="btn" type="button" data-hopen>Ficha</button>
+    <button class="hbtn" data-hctl="mute" type="button"></button><button class="hbtn" data-hctl="pause" type="button"></button></div>`;
 function heroMedia(layer, m){
   if(EMBED){
     const f=document.createElement("iframe");
     f.src=`https://www.youtube-nocookie.com/embed/${m.ytt}?autoplay=1&mute=1&controls=0&loop=1&playlist=${m.ytt}&start=6&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1`;
     f.allow="autoplay; encrypted-media"; f.tabIndex=-1; f.title="";
-    f.onload=()=>{ f.contentWindow.postMessage(JSON.stringify({event:"listening",id:m.ytt,channel:"widget"}),"*"); heroApply(); };
+    f.onload=()=>{ f.contentWindow.postMessage(JSON.stringify({event:"listening",id:m.ytt,channel:"widget"}),"*"); stripsApply(); };
     layer.append(f); return f;
   }
   const v=document.createElement("video");
@@ -628,36 +642,81 @@ addEventListener("message", e=>{
   let d; try{ d=JSON.parse(e.data); }catch(_){ return; }
   const st = d.event==="onStateChange" ? d.info : d.info?.playerState;
   if(st===undefined) return;
-  const f=[...document.querySelectorAll("#heroBg iframe")].find(x=>x.contentWindow===e.source); if(!f) return;
+  const f=[...document.querySelectorAll(".hero-layer iframe")].find(x=>x.contentWindow===e.source); if(!f) return;
   clearTimeout(f._reveal);
   if(st===1) f._reveal=setTimeout(()=>f.classList.add("ready"), 3500);
   else f.classList.remove("ready");
 });
 const ytCmd = (f, func) => f.contentWindow?.postMessage(JSON.stringify({event:"command",func,args:[]}), "*");
-function heroApply(){
-  const run = !hero.paused && hero.visible && !document.hidden && !$("dlg").open && !$("hero").hidden;
-  $("hero").classList.toggle("paused", !run);
-  const layer=$("heroBg").lastElementChild;
-  if(layer && run && !layer.querySelector("video,iframe")) heroMedia(layer, hero.list[hero.i]);
+// toca ou pausa o trailer da última camada de um fundo (carrega o vídeo só na primeira vez que for tocar)
+function mediaSet(bg, m, run, muted){
+  const layer=bg.lastElementChild;
+  if(layer && run && !layer.querySelector("video,iframe")) heroMedia(layer, m);
   const el=layer?.querySelector("video,iframe");
-  if(el?.tagName==="VIDEO"){ el.muted=hero.muted; run ? el.play().catch(()=>{}) : el.pause(); }
-  else if(el){ ytCmd(el, run?"playVideo":"pauseVideo"); ytCmd(el, hero.muted?"mute":"unMute"); }
-  document.querySelectorAll('[data-hctl="pause"]').forEach(b=>{ b.innerHTML=hero.paused?ICON.play:ICON.pause; b.setAttribute("aria-label", hero.paused?"Retomar destaques":"Pausar destaques"); });
-  document.querySelectorAll('[data-hctl="mute"]').forEach(b=>{ b.innerHTML=hero.muted?ICON.muted:ICON.sound; b.setAttribute("aria-label", hero.muted?"Ativar som do trailer":"Silenciar trailer"); });
+  if(el?.tagName==="VIDEO"){ el.muted=muted; run ? el.play().catch(()=>{}) : el.pause(); }
+  else if(el){ ytCmd(el, run?"playVideo":"pauseVideo"); ytCmd(el, muted?"mute":"unMute"); }
 }
+function ctlIcons(root, s, what){
+  root.querySelectorAll('[data-hctl="pause"]').forEach(b=>{ b.innerHTML=s.paused?ICON.play:ICON.pause; b.setAttribute("aria-label", (s.paused?"Retomar ":"Pausar ")+what); });
+  root.querySelectorAll('[data-hctl="mute"]').forEach(b=>{ b.innerHTML=s.muted?ICON.muted:ICON.sound; b.setAttribute("aria-label", s.muted?"Ativar som do trailer":"Silenciar trailer"); });
+}
+// só um trailer com som por vez
+function unmute(s){ hero.muted=true; Object.values(bands).forEach(b=>b.muted=true); s.muted=false; }
+function heroApply(){
+  const run = !hero.paused && hero.visible && !hero.covered && !document.hidden && !$("dlg").open && !$("hero").hidden;
+  $("hero").classList.toggle("paused", !run);
+  mediaSet($("heroBg"), hero.list[hero.i], run, hero.muted);
+  ctlIcons($("hero"), hero, "destaques");
+}
+const stripsApply = () => { heroApply(); bandsApply(); };
 $("heroThumbs").addEventListener("animationend", e=>{ if(e.animationName==="heroProg") heroShow((hero.i+1)%hero.list.length); });
 $("heroThumbs").addEventListener("click", e=>{ const b=e.target.closest("[data-h]"); if(!b) return; if(!RM) hero.paused=false; heroShow(+b.dataset.h); });
 $("hero").addEventListener("click", e=>{
   const o=e.target.closest("[data-hopen]"); if(o) return openMovie(hero.list[hero.i], o.dataset.hopen==="play");
   const c=e.target.closest("[data-hctl]"); if(!c) return;
-  if(c.dataset.hctl==="pause") hero.paused=!hero.paused; else hero.muted=!hero.muted;
-  heroApply();
+  if(c.dataset.hctl==="pause") hero.paused=!hero.paused; else if(hero.muted) unmute(hero); else hero.muted=true;
+  stripsApply();
 });
 new IntersectionObserver(([e])=>{ hero.visible=e.isIntersecting; heroApply(); }, {threshold:0}).observe($("hero"));
+// ---- Faixas das sessões: um filme de cada sessão, com trailer mudo ao fundo, na visão de todas ----
+const bands = {};  // sessão -> {m, paused, muted}; o filme fica o mesmo entre renderizações
+function bandPick(c){
+  const taken = new Set([...hero.list, ...Object.values(bands).map(b=>b.m)]);
+  const l = shuffle(MOVIES.filter(m=>hasTrailer(m) && m.poster && m.cats.includes(c) && !taken.has(m)));
+  return l.find(m=>FEATURED.includes(m.id)) || l[0];
+}
+function bandHTML(c){
+  const b = bands[c.id] ??= {m:bandPick(c.id), paused:RM, muted:true}, m=b.m;
+  if(!m) return "";
+  const kick=`<span style="--d:var(--c-${c.id})"></span>${esc([c.name, m.year, m.directors[0]].filter(Boolean).join(" · "))}`;
+  return `<div class="sband" data-band="${c.id}" role="region" aria-label="Destaque de ${esc(c.name)}">
+      <div class="hero-bg" aria-hidden="true"><div class="hero-layer on"><img alt="" ${POSTERS[m.id]?`src="${POSTERS[m.id]}"`:""}></div></div>
+      <div class="wrap hero-mini">${miniHTML(m, kick)}</div></div>`;
+}
+function bandsApply(){
+  document.querySelectorAll(".sband").forEach(el=>{
+    const b=bands[el.dataset.band], run=!b.paused && el._vis && !document.hidden && !$("dlg").open;
+    mediaSet(el.querySelector(".hero-bg"), b.m, run, b.muted);
+    ctlIcons(el, b, "trailer");
+  });
+}
+// toca só a faixa que está pelo menos metade à vista
+const bandIO = new IntersectionObserver(es=>{ es.forEach(e=>e.target._vis=e.isIntersecting); bandsApply(); }, {threshold:.5});
+$("main").addEventListener("click", e=>{
+  const el=e.target.closest(".sband"); if(!el) return;
+  const b=bands[el.dataset.band];
+  const o=e.target.closest("[data-hopen]"); if(o) return openMovie(b.m, o.dataset.hopen==="play");
+  const c=e.target.closest("[data-hctl]"); if(!c) return;
+  if(c.dataset.hctl==="pause") b.paused=!b.paused; else if(b.muted) unmute(b); else b.muted=true;
+  stripsApply();
+});
 // top negativo: a hero rola até restar a faixa e então gruda logo abaixo do cabeçalho
 function heroStick(){
-  const h=$("hero"); if(h.hidden) return;
   const hdr=document.querySelector("header.top").getBoundingClientRect().bottom;
+  document.documentElement.style.setProperty("--hdr", hdr+"px");
+  const h=$("hero"); if(h.hidden) return;
+  const band=document.querySelector(".sband"), covered=!!band && band.getBoundingClientRect().top<=hdr+1;
+  if(covered!==hero.covered){ hero.covered=covered; h.classList.toggle("covered", covered); heroApply(); }
   const travel=h.offsetHeight - parseFloat(getComputedStyle(h).getPropertyValue("--band"));
   h.style.top=(hdr - travel)+"px";
   const p=Math.min(1, Math.max(0, (hdr - h.getBoundingClientRect().top)/travel));
@@ -666,7 +725,7 @@ function heroStick(){
 let stickRaf=0; const stickSoon=()=>{ cancelAnimationFrame(stickRaf); stickRaf=requestAnimationFrame(heroStick); };
 addEventListener("scroll", stickSoon, {passive:true}); addEventListener("resize", stickSoon);
 new ResizeObserver(stickSoon).observe($("hero"));
-document.addEventListener("visibilitychange", heroApply);
+document.addEventListener("visibilitychange", stripsApply);
 let qt; $("q").addEventListener("input", e=>{ clearTimeout(qt); qt=setTimeout(()=>{state.q=e.target.value.trim(); render();},90); });
 $("clear").onclick=()=>{ $("q").value=""; state.q=""; render(); $("q").focus(); };
 $("reset").onclick=()=>{ $("q").value=""; state.q=""; FACETS.forEach(f=>state.sel[f.k].clear()); render(); };

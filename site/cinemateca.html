@@ -241,15 +241,8 @@ dialog{width:min(980px,calc(100vw - 24px))}
 .hero-kick{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 .hero-kick span{width:8px;height:8px;border-radius:50%;background:var(--d)}
 .hero h2{font:900 clamp(48px,8.5vw,112px)/.84 var(--display);text-transform:uppercase;margin:12px 0 0;text-wrap:balance;overflow-wrap:anywhere;letter-spacing:-.005em}
-.hero-aka{color:var(--muted);font-size:14px;margin-top:8px}
-.hero-meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:14px;font-size:15px}
-.hero-meta span:not(:last-child)::after{content:"·";margin-left:14px;color:var(--muted)}
-.hero-watch{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;font-size:14px;color:var(--muted)}
-.hero-watch a{color:var(--fg);font-weight:600;text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:3px 10px;background:color-mix(in srgb,var(--surface) 70%,transparent)}
-.hero-watch a:hover{background:var(--accent);color:var(--on-accent)}
 .hero-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
 .hero-side{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
-.hero-ctrl{display:flex;gap:6px}
 .hbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 80%,transparent);color:var(--fg);display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(6px)}
 .hbtn:hover{border-color:var(--muted)}
 .hbtn svg{width:16px;height:16px;fill:currentColor}
@@ -269,7 +262,6 @@ dialog{width:min(980px,calc(100vw - 24px))}
   .hero-in{grid-template-columns:minmax(0,1fr);padding-top:180px;gap:18px}
   .hero-side{flex-direction:row-reverse;justify-content:space-between;align-items:center}
   .hero-thumbs{overflow-x:auto;padding:8px 2px 2px;scrollbar-width:none;flex:1;min-width:0}
-  .hero-ctrl{flex:none}
   .hthumb{width:44px;flex:none}
   .hero,.sband{--band:96px}
   .hero-mini{gap:10px}
@@ -357,10 +349,6 @@ body{overflow-x:clip}
   <div class="wrap hero-in">
     <div class="hero-info" id="heroInfo" aria-live="polite"></div>
     <div class="hero-side">
-      <div class="hero-ctrl">
-        <button class="hbtn" data-hctl="mute" type="button"></button>
-        <button class="hbtn" data-hctl="pause" type="button"></button>
-      </div>
       <div class="hero-thumbs" id="heroThumbs"></div>
     </div>
   </div>
@@ -714,23 +702,11 @@ function heroCovers(){
   const img=document.querySelector("#heroBg .hero-layer:last-child > img"), m=hero.list[hero.i];
   if(img && !img.getAttribute("src") && POSTERS[m.id]) img.src=POSTERS[m.id];
 }
-// links diretos: primeiro assinatura/grátis; sem isso, aluguel/compra; sem nada, o filme completo no YouTube
-function heroWatch(m){
-  const w=m.watch||[], free=w.filter(o=>o.t==="Assinatura"||o.t.startsWith("Grátis")), paid=w.filter(o=>o.t==="Aluguel"||o.t==="Compra");
-  const uniq=l=>l.filter((o,k)=>l.findIndex(x=>x.n===o.n)===k).slice(0,4);
-  const links=l=>uniq(l).map(o=>`<a href="${esc(o.u)}" target="_blank" rel="noopener">${esc(o.n)}</a>`).join("");
-  if(free.length) return `<div class="hero-watch"><span>Assista em</span>${links(free)}</div>`;
-  if(paid.length) return `<div class="hero-watch"><span>Alugue ou compre em</span>${links(paid)}</div>`;
-  if(m.flags.includes("Completo no YouTube")) return `<div class="hero-watch"><span>Assista em</span><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(m.title+" "+(m.year||"")+" full movie")}" target="_blank" rel="noopener">YouTube</a></div>`;
-  return "";
-}
 function heroShow(i){
   hero.i=i; const m=hero.list[i], c=state.cat==="all"?m.cats[0]:state.cat;
   const meta=[m.year, m.directors[0], m.countries.slice(0,2).join(", "), m.genres.slice(0,2).join(", ")].filter(Boolean);
-  $("heroInfo").innerHTML = `<div class="hero-kick"><span style="--d:var(--c-${c})"></span>Em destaque · ${esc(CAT[c].name)}</div>
-    <h2>${esc(m.title)}</h2>${m.aka[0]?`<div class="hero-aka">${esc(m.aka[0])}</div>`:""}
-    <div class="hero-meta">${meta.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
-    ${heroWatch(m)}
+  $("heroInfo").innerHTML = `<div class="hero-kick"><span style="--d:var(--c-${c})"></span>${esc(CAT[c].name)}</div>
+    <h2>${esc(m.title)}</h2>
     <div class="hero-actions"><button class="btn primary" type="button" data-hopen="play">${ICON.play}Ver trailer com som</button><button class="btn" type="button" data-hopen>Ficha do filme</button></div>`;
   $("heroMini").innerHTML = miniHTML(m, `Em destaque · ${esc(meta.slice(0,2).join(" · "))}`);
   // reinicia a animação de entrada do texto

@@ -18,6 +18,7 @@ Tem capas, trailers que tocam dentro da página, categorias, filtros (gênero, d
 | `site/template.html` | código-fonte da página (`__DATA__` recebe os dados) |
 | `site/cinemateca.html` | página final |
 | `site/posters.json` | capas em base64, carregadas pela página |
+| `sessions.json` | sessões: nome, descrição e cor (a da página vem de `--c-<id>` no template) |
 | `curators.json` | curadores: nome, foto, bio e (opcional) a lista `films` de ids de filmes |
 | `site/curadores/` | retratos dos curadores em WebP com transparência, em várias larguras (`<id>-<largura>.webp`); quadrados, figura recortada encostada na borda de baixo |
 
@@ -39,7 +40,11 @@ python3 scripts/finalize.py .      # monta site/cinemateca.html, as páginas de 
 
 ## Compartilhamento
 
-`finalize.py` põe no `<head>` as tags Open Graph (Facebook, WhatsApp, LinkedIn, Telegram, Slack, Discord, Pinterest, iMessage), o cartão do X/Twitter, schema.org, ícones e o manifest, no `site/cinemateca.html` e no `index.html` da raiz. Os robôs não rodam JS nem leem o `#`, então cada curador tem uma página estática em `site/curador/<id>.html` com o próprio cartão (`site/share/<id>.jpg`), que redireciona para o perfil: é esse o link para compartilhar um curador.
+`finalize.py` põe no `<head>` as tags Open Graph (Facebook, WhatsApp, LinkedIn, Telegram, Slack, Discord, Pinterest, iMessage), o cartão do X/Twitter, schema.org, ícones e o manifest, no `site/cinemateca.html` e no `index.html` da raiz. Os robôs não rodam JS nem leem o `#`, então cada curador e cada sessão têm uma página estática (`site/curador/<id>.html`, `site/sessao/<id>.html`) com o próprio cartão em `site/share/`, que redireciona para a página: é esse o link para compartilhar.
+
+## Sessões
+
+Cada sessão tem uma página em `#<id>` (ex.: `#mindfuck`). No lugar da hero entra um cabeçalho com o nome, a descrição, os números, os diretores e os países mais frequentes (clicáveis, viram filtro) e um leque de cartazes. Abaixo vêm os filtros e a grade, só com os filmes da sessão. Para compartilhar, use `site/sessao/<id>.html`, que tem o cartão próprio (`site/share/sessao-<id>.jpg`) e redireciona para a página.
 
 ## Curadores
 

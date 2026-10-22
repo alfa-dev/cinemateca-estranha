@@ -1,0 +1,32 @@
+[
+  {
+    "id": "weird",
+    "name": "Weird Movies",
+    "color": "#e86bb3",
+    "desc": "Estranhezas de culto: comédias de terror espanholas, musicais de ficção científica, palhaços do espaço e ninjas noruegueses."
+  },
+  {
+    "id": "mundo",
+    "name": "Weird pelo mundo",
+    "color": "#3fc2b0",
+    "desc": "Raridades de dezenas de países, da animação húngara ao experimental grego. Muitas estão completas no YouTube."
+  },
+  {
+    "id": "mindfuck",
+    "name": "Mindfuck",
+    "color": "#9b8cff",
+    "desc": "Filmes que dobram a realidade, o tempo e a cabeça de quem assiste. Separados por gênero na planilha original."
+  },
+  {
+    "id": "horror",
+    "name": "Pleasing Horror",
+    "color": "#ef5a4f",
+    "desc": "Terror bonito de ver: bruxas em technicolor, lobos de conto de fadas e gêmeos de Cronenberg."
+  },
+  {
+    "id": "thelema",
+    "name": "Thelema, Magia e Ocultismo",
+    "color": "#d9b54a",
+    "desc": "Crowley, Kenneth Anger, bruxaria, Lovecraft e documentários sobre o oculto."
+  }
+]

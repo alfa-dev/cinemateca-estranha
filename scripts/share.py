@@ -49,6 +49,21 @@ i{position:fixed;right:56px;bottom:48px;font:900 34px "Big Shoulders Display";fo
 <p><b>%d</b> filmes · <b>%d</b> países<br>de <b>%d</b> a <b>%d</b></p></div><i>Cinemateca <span>Estranha</span></i>'''%(
     c.get('color','#f4a640'),c.get('color','#f4a640'),scr,c['photo']['base'],c['role'],' '.join(w[:-1]),w[-1],
     len(l),len({x for m in l for x in m['countries']}),min(ys),max(ys)),1200,630,S+'/site/share/%s.jpg'%c['id'])
+# sessões: mosaico com os cartazes da sessão, nome com a primeira letra na cor dela
+for c in json.load(open(S+'/sessions.json')):
+  l=[m['id'] for m in M if c['id'] in m['cats'] and m['id'] in P]; random.seed(c['id']); random.shuffle(l)
+  tl=''.join('<img src="%s">'%P[i] for i in (l*(60//max(1,len(l))+1))[:60])
+  shot('ses_'+c['id'],'''<style>
+.m{position:fixed;inset:-120px -160px;display:grid;grid-template-columns:repeat(12,1fr);gap:10px;rotate:-8deg;opacity:.5}
+.m img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px}
+.v{position:fixed;inset:0;background:radial-gradient(70% 90% at 30% 60%,#121019f2 30%,#12101999 70%,#12101955)}
+.t{position:fixed;left:72px;right:72px;bottom:64px}
+k{font:500 24px "JetBrains Mono";letter-spacing:.12em;text-transform:uppercase;color:{C}}
+b{display:block;margin-top:14px;font:900 {FS}px/.84 "Big Shoulders Display";text-transform:uppercase}b::first-letter{color:{C}}
+p{margin:22px 0 0;font:500 24px "JetBrains Mono";letter-spacing:.06em;text-transform:uppercase;color:#b4adc4}p span{color:#f4a640}
+</style><div class="m">{TILES}</div><div class="v"></div><div class="t"><k>Sessão</k><b>{NAME}</b><p>{N} filmes · Cinemateca <span>Estranha</span></p></div>'''
+    .replace('{C}',c['color']).replace('{FS}',str(130 if len(c['name'])<18 else 96)).replace('{NAME}',c['name']).replace('{N}',str(sum(1 for m in M if c['id'] in m['cats']))).replace('{TILES}',tl),
+    1200,630,S+'/site/share/sessao-%s.jpg'%c['id'])
 # ícone: monograma CE (C claro, E laranja), o mesmo do cabeçalho compacto no celular
 svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="%d" fill="#121019"/><text x="256" y="368" text-anchor="middle" font-family="Big Shoulders Display,Impact,sans-serif" font-weight="900" font-size="330" letter-spacing="-6"><tspan fill="#eeeaf4">C</tspan><tspan fill="#f4a640">E</tspan></text></svg>'
 # o Chrome headless não abre janelas tão pequenas: renderiza em 512 e reduz

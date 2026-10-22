@@ -94,7 +94,8 @@ def meta(title,desc,url,img,alt,kind='website',up=''):
 SITE_DESC=f'{len(M)} filmes estranhos, cult e de horror de {NC} países, com trailers, filtros e onde assistir no Brasil. Curadoria de '+' e '.join(c['name'] for c in CUR)+'.'
 site_meta=meta('Cinemateca Estranha',SITE_DESC,BASE+'cinemateca.html',BASE+'share/cinemateca.jpg','Cartazes de filmes de culto atrás do nome Cinemateca Estranha')
 site_meta+='\n<script type="application/ld+json">'+js({'@context':'https://schema.org','@type':'WebSite','name':'Cinemateca Estranha','url':BASE+'cinemateca.html','description':SITE_DESC,'inLanguage':'pt-BR','image':BASE+'share/cinemateca.jpg'})+'</script>'
-open(S+'/site/cinemateca.html','w').write(t.replace('__META__',site_meta).replace('__CURATORS__',js(cur)).replace('__DATA__',js(M)))
+SES=json.load(open(S+'/sessions.json'))
+open(S+'/site/cinemateca.html','w').write(t.replace('__META__',site_meta).replace('__SESSIONS__',js(SES)).replace('__CURATORS__',js(cur)).replace('__DATA__',js(M)))
 json.dump({'name':'Cinemateca Estranha','short_name':'Cinemateca','description':SITE_DESC,'lang':'pt-BR','start_url':'cinemateca.html','scope':'./','display':'standalone','background_color':'#121019','theme_color':'#121019',
   'icons':[{'src':'icons/icon-192.png','sizes':'192x192','type':'image/png'},{'src':'icons/icon-512.png','sizes':'512x512','type':'image/png'},{'src':'icons/icon-maskable-512.png','sizes':'512x512','type':'image/png','purpose':'maskable'}]},
   open(S+'/site/site.webmanifest','w'),ensure_ascii=False,indent=2)
@@ -102,6 +103,24 @@ json.dump({'name':'Cinemateca Estranha','short_name':'Cinemateca','description':
 open(S+'/index.html','w').write('<!doctype html>\n<html lang="pt-BR">\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>Cinemateca Estranha</title>\n'
   +site_meta.replace('href="favicon.ico"','href="site/favicon.ico"').replace('href="icons/','href="site/icons/').replace('href="site.webmanifest"','href="site/site.webmanifest"')
   +'\n<meta http-equiv="refresh" content="0; url=site/cinemateca.html">\n<a href="site/cinemateca.html">Cinemateca Estranha</a>\n')
+# cada sessão também ganha uma página estática com o próprio cartão, que redireciona para #<sessão>
+os.makedirs(S+'/site/sessao',exist_ok=True)
+for c in SES:
+  l=[m for m in M if c['id'] in m['cats']]
+  desc=f"Sessão da Cinemateca Estranha: {len(l)} filmes de {len({x for m in l for x in m['countries']})} países. {c['desc']}"
+  url=BASE+'sessao/'+c['id']+'.html'; dest='../cinemateca.html#'+c['id']
+  mt=meta(f"{c['name']} · Cinemateca Estranha",desc,url,BASE+'share/sessao-'+c['id']+'.jpg',f"Cartazes da sessão {c['name']}",'website','../')
+  mt+='\n<script type="application/ld+json">'+js({'@context':'https://schema.org','@type':'CollectionPage','name':c['name'],'description':c['desc'],'url':url,'isPartOf':{'@type':'WebSite','name':'Cinemateca Estranha','url':BASE+'cinemateca.html'},'numberOfItems':len(l)})+'</script>'
+  open(S+'/site/sessao/%s.html'%c['id'],'w').write(f'''<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{c['name']} · Cinemateca Estranha</title>
+{mt}
+<meta http-equiv="refresh" content="0; url={dest}">
+<script>location.replace("{dest}")</script>
+<a href="{dest}">{c['name']} · Cinemateca Estranha</a>
+''')
 os.makedirs(S+'/site/curador',exist_ok=True)
 for c in CUR:
   l=[m for m in M if c['id'] in m['cur']]; bio=[x.replace('**','') for x in c['bio']]; first=re.split(r'(?<=[.!?])\s',bio[0])[0]

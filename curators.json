@@ -3,6 +3,7 @@
     "id": "gisele-britto",
     "name": "Gisele Britto",
     "role": "Curadora",
+    "color": "#a77bff",
     "photo": {"base": "curadores/gisele-britto", "widths": [96, 480, 800, 1200]},
     "default": true,
     "bio": [

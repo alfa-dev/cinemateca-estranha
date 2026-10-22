@@ -287,9 +287,10 @@ body{overflow-x:clip}
 .curator{background:var(--bg);border-bottom:1px solid var(--line);overflow:hidden}
 .curator[hidden]{display:none}
 .curator .wrap{display:grid;grid-template-columns:minmax(240px,400px) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center;padding-block:44px 48px}
-.cur-photo{position:relative;margin:0;background:#fbfaf7;padding:14px 14px 42px;border-radius:2px;box-shadow:var(--shadow);rotate:-1.5deg}
-.cur-photo img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
-.cur-photo figcaption{position:absolute;left:16px;right:16px;bottom:13px;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#6a6474}
+.cur-photo{position:relative;margin:0;isolation:isolate}
+/* recorte com transparência: um halo quente atrás separa o cabelo escuro do fundo */
+.cur-photo::before{content:"";position:absolute;inset:8% 6% 4%;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 22%,transparent),transparent);filter:blur(24px)}
+.cur-photo img{display:block;width:100%;height:auto;aspect-ratio:1}
 .cur-back{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none}
 .cur-back:hover{color:var(--accent)}
 .cur-kick{margin-top:22px;font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
@@ -302,7 +303,7 @@ body{overflow-x:clip}
 .cur-bio p:first-child::first-letter{float:left;font:900 68px/.8 var(--display);color:var(--accent);margin:6px 10px 0 0}
 @media (max-width:760px){
   .curator .wrap{grid-template-columns:minmax(0,1fr);padding-block:28px 36px}
-  .cur-photo{width:min(100%,340px);justify-self:center}
+  .cur-photo{width:min(100%,380px);justify-self:center;margin-bottom:-12px}
   .cur-kick{margin-top:14px}
 }
 /* Rodapé */
@@ -313,7 +314,7 @@ body{overflow-x:clip}
 .curlinks{display:flex;gap:8px;flex-wrap:wrap}
 .curlink{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:3px 12px 3px 3px;font-size:14px;font-weight:600;color:var(--fg);text-decoration:none;background:var(--raise)}
 .curlink:hover{border-color:var(--accent)}
-.curlink img{width:28px;height:28px;border-radius:50%;object-fit:cover;object-position:center 30%;background:#fbfaf7}
+.curlink img{width:28px;height:28px;border-radius:50%;object-fit:cover;object-position:center 30%;background:#000}
 </style>
 
 <header class="top">
@@ -385,8 +386,11 @@ const CATS = [
   {id:"thelema", name:"Thelema, Magia e Ocultismo", desc:"Crowley, Kenneth Anger, bruxaria, Lovecraft e documentários sobre o oculto."}
 ];
 const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
-const CURATORS = [{"id":"gisele-britto","name":"Gisele Britto","role":"Curadora","photo":"curadores/gisele-britto.jpg","default":true,"bio":["Gisele é uma personagem de contrastes. Prática no cotidiano, espontânea nos gestos e atenta aos detalhes, ela transita entre a simplicidade das coisas concretas e a complexidade silenciosa do mundo interior. Tem o humor de quem não precisa transformar tudo em drama, mas carrega a profundidade de quem sabe que a vida raramente se resume àquilo que acontece na superfície.","Se fosse uma personagem de cinema, não seria apresentada por uma narração explicativa, mas por uma sequência de pequenos gestos, diálogos despretensiosos, silêncios e olhares que dizem mais do que as palavras. Sua história não estaria necessariamente nos grandes acontecimentos, mas nas contradições, nas escolhas e na maneira particular de habitar o mundo.","Gisele tem a matéria de uma personagem que não se deixa resumir a um único traço. Entre razão e sensibilidade, leveza e intensidade, familiaridade e mistério, existe uma personalidade que ganha contornos à medida que a câmera se aproxima.","Ela não é um enigma à espera de uma solução. É uma história que não perde a complexidade quando alguém acredita ter compreendido seu enredo. Como nos bons filmes, há sempre uma diferença entre aquilo que se vê, aquilo que se sente e aquilo que permanece depois que a tela escurece."]}];
+const CURATORS = [{"id":"gisele-britto","name":"Gisele Britto","role":"Curadora","photo":{"base":"curadores/gisele-britto","widths":[96,480,800,1200]},"default":true,"bio":["Gisele é uma personagem de contrastes. Prática no cotidiano, espontânea nos gestos e atenta aos detalhes, ela transita entre a simplicidade das coisas concretas e a complexidade silenciosa do mundo interior. Tem o humor de quem não precisa transformar tudo em drama, mas carrega a profundidade de quem sabe que a vida raramente se resume àquilo que acontece na superfície.","Se fosse uma personagem de cinema, não seria apresentada por uma narração explicativa, mas por uma sequência de pequenos gestos, diálogos despretensiosos, silêncios e olhares que dizem mais do que as palavras. Sua história não estaria necessariamente nos grandes acontecimentos, mas nas contradições, nas escolhas e na maneira particular de habitar o mundo.","Gisele tem a matéria de uma personagem que não se deixa resumir a um único traço. Entre razão e sensibilidade, leveza e intensidade, familiaridade e mistério, existe uma personalidade que ganha contornos à medida que a câmera se aproxima.","Ela não é um enigma à espera de uma solução. É uma história que não perde a complexidade quando alguém acredita ter compreendido seu enredo. Como nos bons filmes, há sempre uma diferença entre aquilo que se vê, aquilo que se sente e aquilo que permanece depois que a tela escurece."]}];
 const CUR = Object.fromEntries(CURATORS.map(c=>[c.id,c]));
+// fotos em WebP em várias larguras: <base>-<largura>.webp
+const curPhoto = (c, w) => `${c.photo.base}-${c.photo.widths.find(x=>x>=w) ?? c.photo.widths.at(-1)}.webp`;
+const curSrcset = c => c.photo.widths.filter(w=>w>=240).map(w=>`${c.photo.base}-${w}.webp ${w}w`).join(", ");
 let POSTERS = {};
 
 const norm = s => (s||"").toString().normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
@@ -564,7 +568,7 @@ function openMovie(m, play){
       <h2 id="dTitle">${esc(m.title)}</h2>
       ${m.aka.length?`<div class="aka">${m.aka.map(esc).join(" · ")}</div>`:""}
       ${facts?`<div class="facts">${facts}</div>`:""}
-      <div><div class="label">Curadoria</div><div class="curlinks">${m.cur.map(id=>`<a class="curlink" href="#curador/${id}" data-close><img src="${esc(CUR[id].photo)}" alt="">${esc(CUR[id].name)}</a>`).join("")}</div></div>
+      <div><div class="label">Curadoria</div><div class="curlinks">${m.cur.map(id=>`<a class="curlink" href="#curador/${id}" data-close><img src="${esc(curPhoto(CUR[id],56))}" alt="" width="28" height="28">${esc(CUR[id].name)}</a>`).join("")}</div></div>
       <div><div class="label">Sessões</div><div class="catpills">${m.cats.map(c=>`<button class="catpill" type="button" data-c="${c}" data-close style="--dot:var(--c-${c})">${esc(CAT[c].name)}</button>`).join("")}</div></div>
       <div class="watch"><div class="label">Onde assistir no Brasil</div>${watch}</div>
       ${tags?`<div><div class="label">Tags</div><div class="chips">${tags}</div></div>`:""}
@@ -612,7 +616,7 @@ function renderCurator(){
   const l=MOVIES.filter(m=>m.cur.includes(c.id)), ys=l.map(m=>m.year).filter(Boolean);
   const nc=new Set(l.flatMap(m=>m.countries)).size, ns=new Set(l.flatMap(m=>m.cats)).size;
   el.innerHTML = `<div class="wrap">
-    <figure class="cur-photo"><img src="${esc(c.photo)}" alt="Retrato de ${esc(c.name)}"><figcaption>${esc(c.name)} · ${esc(c.role)}</figcaption></figure>
+    <figure class="cur-photo"><img src="${esc(curPhoto(c,800))}" srcset="${esc(curSrcset(c))}" sizes="(max-width:760px) min(calc(100vw - 32px),380px),400px" width="800" height="800" alt="Retrato de ${esc(c.name)}"></figure>
     <div><a class="cur-back" href="#">← Todo o catálogo</a>
       <div class="cur-kick">${esc(c.role)} da Cinemateca Estranha</div>
       <h1 id="curName">${esc(c.name)}</h1>

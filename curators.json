@@ -3,7 +3,7 @@
     "id": "gisele-britto",
     "name": "Gisele Britto",
     "role": "Curadora",
-    "photo": "curadores/gisele-britto.jpg",
+    "photo": {"base": "curadores/gisele-britto", "widths": [96, 480, 800, 1200]},
     "default": true,
     "bio": [
       "Gisele é uma personagem de contrastes. Prática no cotidiano, espontânea nos gestos e atenta aos detalhes, ela transita entre a simplicidade das coisas concretas e a complexidade silenciosa do mundo interior. Tem o humor de quem não precisa transformar tudo em drama, mas carrega a profundidade de quem sabe que a vida raramente se resume àquilo que acontece na superfície.",

@@ -19,7 +19,7 @@ Tem capas, trailers que tocam dentro da página, categorias, filtros (gênero, d
 | `site/cinemateca.html` | página final |
 | `site/posters.json` | capas em base64, carregadas pela página |
 | `curators.json` | curadores: nome, foto, bio e (opcional) a lista `films` de ids de filmes |
-| `site/curadores/` | retratos dos curadores |
+| `site/curadores/` | retratos dos curadores em WebP com transparência, em várias larguras (`<id>-<largura>.webp`) |
 
 ## Pipeline
 
@@ -38,7 +38,7 @@ python3 scripts/finalize.py .      # monta site/cinemateca.html
 
 ## Curadores
 
-Cada curador tem uma página em `#curador/<id>`, com retrato, números e bio, e um botão que leva ao catálogo filtrado pela curadoria dele. Para adicionar um, inclua uma entrada em `curators.json` com `films` (ids do IMDb, como em `movies.final.json`), ponha a foto em `site/curadores/` e rode `finalize.py`. Um filme pode ter vários curadores: basta estar no `films` de cada um. Filmes que não estão em nenhuma lista ficam com o curador marcado `"default": true` (hoje, Gisele Britto, com todos os 248); para um filme ser dela e de outro curador, liste-o também no `films` dela.
+Cada curador tem uma página em `#curador/<id>`, com retrato, números e bio, e um botão que leva ao catálogo filtrado pela curadoria dele. Para adicionar um, inclua uma entrada em `curators.json` com `films` (ids do IMDb, como em `movies.final.json`), gere a foto em `site/curadores/` (`cwebp -resize <largura> 0 -q 78 -alpha_q 90 foto.png -o site/curadores/<id>-<largura>.webp` para 96, 480, 800 e 1200) e rode `finalize.py`. Um filme pode ter vários curadores: basta estar no `films` de cada um. Filmes que não estão em nenhuma lista ficam com o curador marcado `"default": true` (hoje, Gisele Britto, com todos os 248); para um filme ser dela e de outro curador, liste-o também no `films` dela.
 
 ## Trailers
 

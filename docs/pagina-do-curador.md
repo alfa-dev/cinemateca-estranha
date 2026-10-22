@@ -48,7 +48,7 @@ Depois de editar, rode `python3 scripts/finalize.py .`.
   - os números, calculados dos filmes: filmes, países, sessões, do ano mais antigo ao mais novo;
   - o botão "Ver os N filmes da curadoria";
   - a bio:
-    - a capitular de letreiro tem quatro linhas de altura e vai na cor do curador, com duas cópias deslocadas em contorno, como impressão fora de registro;
+    - a capitular tem quatro linhas de altura e efeito só dentro da letra, como luz de filme noir: feixes de persiana na diagonal cortam a cor do curador, que vai da luz no alto ao escuro embaixo, com granulação. É um `<span class="cur-cap">` com `background-clip: text`;
     - os trechos marcados com `**…**` aparecem em negrito branco, com um grifo na cor do curador.
 - Na página do curador ficam escondidos a hero, as sessões, os filtros e a grade. A aba do navegador mostra "<nome> · Cinemateca Estranha".
 

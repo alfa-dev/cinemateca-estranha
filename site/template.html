@@ -286,12 +286,14 @@ body{overflow-x:clip}
 /* Página do curador: retrato, nome, números e bio; tela sempre escura, como a hero (ver docs/pagina-do-curador.md) */
 .curator{--cur:var(--accent);background:var(--bg);border-bottom:1px solid var(--line);overflow:hidden}
 .curator[hidden]{display:none}
-.curator .wrap{display:grid;grid-template-columns:minmax(240px,400px) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center;padding-block:44px 48px}
+.curator .wrap{display:grid;grid-template-columns:minmax(240px,400px) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center}
+/* a coluna do retrato vai de cima a baixo da seção (a tela com o trecho ocupa a altura toda); o respiro fica só no texto */
+.cur-text{padding-block:44px 48px}
 /* retrato recortado (fundo transparente) na frente de uma tela de cinema que ocupa a altura toda da foto,
    passando um trecho curto, desfocado e em preto e branco de um filme da curadoria (ver docs/pagina-do-curador.md).
    Serve para qualquer curador com foto no mesmo formato: quadrada, figura encostada na borda de baixo */
-.cur-photo{position:relative;margin:0;isolation:isolate;aspect-ratio:1/1.13;container-type:inline-size;clip-path:inset(-50% -50% 0 -50%)}
-.cur-screen{position:absolute;inset:0;z-index:-1;border-radius:8px;overflow:hidden;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14);background:
+.cur-photo{position:relative;margin:0;isolation:isolate;align-self:stretch;min-height:113cqi;container-type:inline-size;clip-path:inset(-50% -50% 0 -50%)}
+.cur-screen{position:absolute;inset:0;z-index:-1;overflow:hidden;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14);background:
   radial-gradient(110% 80% at 50% 0%,color-mix(in srgb,var(--cur) 60%,transparent),transparent 72%),
   linear-gradient(#2b2333,#120f18)}
 /* parallax: o vídeo é mais alto que a tela e desce mais devagar que a página (--sy = topo da seção, vindo do scroll) */
@@ -319,8 +321,11 @@ body{overflow-x:clip}
 .cur-bio p:first-child::first-letter{float:left;font:900 152px/.74 var(--display);color:var(--cur);margin:10px 18px 0 -2px;padding:0 4px;
   text-shadow:4px 4px 0 var(--bg),6px 6px 0 color-mix(in srgb,var(--cur) 55%,transparent),10px 10px 0 var(--bg),12px 12px 0 color-mix(in srgb,var(--cur) 25%,transparent)}
 @media (max-width:760px){
-  .curator .wrap{grid-template-columns:minmax(0,1fr);padding-block:28px 36px}
-  .cur-photo{width:min(100%,380px);justify-self:center}
+  .curator .wrap{grid-template-columns:minmax(0,1fr);gap:0}
+  .cur-text{padding-block:24px 36px}
+  /* celular: a tela vai de borda a borda no topo, o retrato encostado embaixo dela */
+  .cur-photo{margin-inline:calc(50% - 50vw);min-height:calc(min(100vw,420px) * 1.25)}
+  .cur-photo img{left:50%;width:min(100vw,420px);height:min(100vw,420px);translate:-50% 0}
   .cur-kick{margin-top:14px}
 }
 /* Rodapé */
@@ -641,7 +646,7 @@ function renderCurator(){
   const nc=new Set(l.flatMap(m=>m.countries)).size, ns=new Set(l.flatMap(m=>m.cats)).size;
   el.innerHTML = `<div class="wrap">
     <figure class="cur-photo"><div class="cur-screen">${c.screen?`<video muted loop playsinline ${RM?"":"autoplay"} preload="auto" poster="${esc(c.screen.poster)}" src="${esc(c.screen.video)}" aria-hidden="true"></video>`:""}</div><img src="${esc(curPhoto(c,800))}" srcset="${esc(curSrcset(c))}" sizes="(max-width:760px) min(calc(100vw - 32px),380px),400px" width="800" height="800" alt="Retrato de ${esc(c.name)}"></figure>
-    <div><a class="cur-back" href="#">← Todo o catálogo</a>
+    <div class="cur-text"><a class="cur-back" href="#">← Todo o catálogo</a>
       <div class="cur-kick">${esc(c.role)} da Cinemateca Estranha</div>
       <h1 id="curName">${esc(words.slice(0,-1).join(" "))} <span>${esc(words.at(-1))}</span></h1>
       <div class="cur-facts"><span><b>${l.length}</b> ${l.length===1?"filme":"filmes"}</span><span><b>${nc}</b> ${nc===1?"país":"países"}</span><span><b>${ns}</b> ${ns===1?"sessão":"sessões"}</span>${ys.length?`<span>de <b>${Math.min(...ys)}</b> a <b>${Math.max(...ys)}</b></span>`:""}</div>
@@ -782,12 +787,10 @@ new IntersectionObserver(([e])=>{ hero.visible=e.isIntersecting; heroApply(); },
 const MOBILE = matchMedia("(max-width:640px)");
 function heroStick(){
   // celular: cabeçalho compacto depois de rolar. Ao encolher, o navegador puxa o scroll para cima na mesma medida
-  // (scroll anchoring); por isso só volta ao normal abaixo de 140 menos o quanto o cabeçalho encolheu, senão alterna sem parar
+  // (scroll anchoring), então um limite de volta comum faria alternar sem parar; volta ao normal só no topo da página,
+  // onde o navegador não ajusta o scroll
   const top=document.querySelector("header.top"), y=scrollY, on=top.classList.contains("compact");
-  top._h = top._h || {};
-  top._h[on?"c":"n"] = top.offsetHeight;
-  const shrink = (top._h.n||0) - (top._h.c||0);
-  top.classList.toggle("compact", MOBILE.matches && (on ? y > 140 - shrink - 24 : y > 140));
+  top.classList.toggle("compact", MOBILE.matches && (on ? y > 2 : y > 140));
   const hdr=top.getBoundingClientRect().bottom;
   document.documentElement.style.setProperty("--hdr", hdr+"px");
   const h=$("hero"), band=h.hidden||MOBILE.matches ? 0 : parseFloat(getComputedStyle(h).getPropertyValue("--band"));

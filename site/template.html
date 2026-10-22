@@ -315,7 +315,9 @@ body{overflow-x:clip}
 /* trechos em destaque: **assim** na bio do curators.json */
 .cur-bio strong{font-weight:600;color:#fff;background:linear-gradient(transparent 62%,color-mix(in srgb,var(--cur) 32%,transparent) 62%)}
 /* capitular: duas cores com corte seco no meio, a de baixo na cor do curador e a de cima mais clara */
-.cur-cap{float:left;font:900 152px/.74 var(--display);margin:10px 16px 0 -2px;padding:0 2px;color:transparent;
+/* a letra passa da caixa de linha (line-height .74) e o fundo só pinta dentro da caixa: o padding vertical a cobre inteira,
+   e a margem negativa devolve o mesmo lugar */
+.cur-cap{float:left;font:900 152px/.74 var(--display);margin:calc(10px - .16em) 16px -.16em -2px;padding:.16em 2px;color:transparent;
   background:linear-gradient(to top,var(--cur) 50%,color-mix(in srgb,var(--cur) 45%,#fff) 50%);
   -webkit-background-clip:text;background-clip:text}
 @media (max-width:760px){

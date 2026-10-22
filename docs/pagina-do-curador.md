@@ -74,6 +74,7 @@ Depois de editar, rode `python3 scripts/finalize.py .`.
 - **Celular (≤760px):** o fundo vai de borda a borda atrás do retrato, que fica centralizado no topo.
 - **Vídeo:** passa um trecho curto de um filme da curadoria (Gisele: *Hausu*, 1977). É mudo, em loop e começa sozinho.
 - **Dois cortes, um para cada formato de tela:** o vídeo é recortado no formato certo, em vez de ser esticado. `video`/`poster` são o corte alto do desktop; `videoMobile`/`posterMobile`, o corte 4:5 do celular. A página escolhe pela largura ao abrir o perfil.
+- **Opacidade:** o vídeo fica a 50% sobre a base escura da página, então o filme some no escuro sem ganhar cor.
 - **Camadas por cima do vídeo:**
   - uma base escurecida embaixo, para o corpo da figura não se perder num quadro claro;
   - granulação de película (ruído SVG em `overlay`).

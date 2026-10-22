@@ -295,22 +295,19 @@ body{overflow-x:clip}
 .curator{--cur:var(--accent);background:var(--bg);border-bottom:1px solid var(--line);overflow:hidden}
 .curator[hidden]{display:none}
 .curator .wrap{display:grid;grid-template-columns:minmax(240px,400px) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center;padding-block:44px 48px}
-/* retrato recortado (fundo transparente) saindo de uma tela de cinema: o primeiro nome vazado atrás,
-   a tela iluminada na parte de baixo e a figura por cima, com a cabeça passando da borda da tela.
+/* retrato recortado (fundo transparente) na frente de uma tela de cinema: a tela fica atrás da cabeça,
+   passando um trecho curto de um filme da curadoria, e some em degradê na direção do corpo.
    Serve para qualquer curador com foto no mesmo formato: quadrada, figura encostada na borda de baixo */
 .cur-photo{position:relative;margin:0;isolation:isolate;aspect-ratio:1/1.13;container-type:inline-size;clip-path:inset(-50% -50% 0 -50%)}
 /* nome completo vazado numa linha acima da figura (a cabeça encosta nele); como na marca, a última palavra vai na cor do curador */
-/* nuvem de títulos da curadoria atrás da figura; cada título numa profundidade (--d) e o scroll (--sy) os desloca em velocidades diferentes */
-.cur-cloud{position:absolute;inset:-4% 0 22% -14%;z-index:-2;pointer-events:none;--sy:0;clip-path:inset(-100vh 0 -100vh -100vw)}
-.cur-cloud span{position:absolute;left:var(--x);top:var(--y);translate:-50% calc(var(--sy) * var(--d) * 1px);white-space:nowrap;font:900 var(--s)/.9 var(--display);text-transform:uppercase;color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--fg) 32%,transparent);will-change:translate}
-.cur-cloud span:nth-child(3n+1){-webkit-text-stroke-color:color-mix(in srgb,var(--cur) 80%,transparent)}
-.cur-cloud span:nth-child(4n+2){color:color-mix(in srgb,var(--cur) 28%,transparent);-webkit-text-stroke:0}
-.cur-cloud span:nth-child(5n){color:color-mix(in srgb,var(--fg) 12%,transparent);-webkit-text-stroke:0}
-.cur-screen{position:absolute;inset:auto 0 0;height:60cqi;z-index:-1;border-radius:8px 8px 0 0;overflow:hidden;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14);background:
+.cur-screen{position:absolute;inset:0 0 auto;height:68cqi;z-index:-1;border-radius:8px;-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent);overflow:hidden;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14);background:
   radial-gradient(110% 80% at 50% 0%,color-mix(in srgb,var(--cur) 60%,transparent),transparent 72%),
   linear-gradient(#2b2333,#120f18)}
+/* trecho curto de um filme da curadoria passando na tela (sem som, em loop); o brilho e a base escura ficam por cima */
+.cur-screen video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cur-screen::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(color-mix(in srgb,var(--cur) 30%,transparent),transparent 45%),linear-gradient(to top,rgb(0 0 0 / .5),transparent 55%)}
 /* granulação de película */
-.cur-screen::after{content:"";position:absolute;inset:0;opacity:.22;mix-blend-mode:overlay;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.cur-screen::after{content:"";position:absolute;inset:0;z-index:2;opacity:.22;mix-blend-mode:overlay;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .cur-photo img{position:absolute;inset:auto 0 0;width:100%;height:100cqi;filter:drop-shadow(0 10px 22px rgb(0 0 0 / .6));animation:curRise 1.2s cubic-bezier(.2,.7,.2,1) both}
 @keyframes curRise{from{opacity:0;translate:0 10%}}
 @media (prefers-reduced-motion:reduce){.cur-photo img{animation:none}}
@@ -406,7 +403,7 @@ const CATS = [
   {id:"thelema", name:"Thelema, Magia e Ocultismo", desc:"Crowley, Kenneth Anger, bruxaria, Lovecraft e documentários sobre o oculto."}
 ];
 const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
-const CURATORS = [{"id":"gisele-britto","name":"Gisele Britto","role":"Curadora","color":"#a77bff","photo":{"base":"curadores/gisele-britto","widths":[96,480,800,1200]},"default":true,"bio":["Gisele é uma personagem de contrastes. Prática no cotidiano, teatral nos gestos, atenta ao detalhe que todo mundo deixou passar. Vive entre o concreto das coisas e o labirinto do mundo interior, e não economiza drama: faz de um fim de tarde uma cena, de uma conversa um ato, de uma taça de vinho um plano-sequência. Para ela, a vida nunca se resume ao que acontece na superfície.","Escolheu 248 filmes como quem escolhe companhia para a madrugada. Atravessou 42 países e mais de um século de cinema, de 1916 a 2020, atrás das obras que o mundo deixou de lado: as malditas, as esquecidas, as que foram vaiadas na estreia e amadas em segredo depois. Gisele não procura o filme perfeito. Procura o filme que incomoda, que fica, que volta à cabeça três dias depois, no meio de um banho qualquer.","Sua curadoria não obedece a cânone nem a algoritmo. Obedece ao faro. Ela sabe que o estranho não é o que está longe, mas o que está perto demais e a gente finge não ver. Por isso suas sessões não explicam, provocam. Cada filme é uma porta entreaberta, e ela confia que você vai ter coragem de empurrar.","Ela não é um enigma à espera de solução. É uma sala escura com o projetor ainda rodando. Como nos bons filmes, há sempre uma distância entre aquilo que se vê, aquilo que se sente e aquilo que permanece depois que a tela escurece. É exatamente nessa distância que Gisele mora."]}];
+const CURATORS = [{"id":"gisele-britto","name":"Gisele Britto","role":"Curadora","color":"#a77bff","photo":{"base":"curadores/gisele-britto","widths":[96,480,800,1200]},"default":true,"bio":["Gisele é uma personagem de contrastes. Prática no cotidiano, teatral nos gestos, atenta ao detalhe que todo mundo deixou passar. Vive entre o concreto das coisas e o labirinto do mundo interior, e não economiza drama: faz de um fim de tarde uma cena, de uma conversa um ato, de uma taça de vinho um plano-sequência. Para ela, a vida nunca se resume ao que acontece na superfície.","Escolheu 248 filmes como quem escolhe companhia para a madrugada. Atravessou 42 países e mais de um século de cinema, de 1916 a 2020, atrás das obras que o mundo deixou de lado: as malditas, as esquecidas, as que foram vaiadas na estreia e amadas em segredo depois. Gisele não procura o filme perfeito. Procura o filme que incomoda, que fica, que volta à cabeça três dias depois, no meio de um banho qualquer.","Sua curadoria não obedece a cânone nem a algoritmo. Obedece ao faro. Ela sabe que o estranho não é o que está longe, mas o que está perto demais e a gente finge não ver. Por isso suas sessões não explicam, provocam. Cada filme é uma porta entreaberta, e ela confia que você vai ter coragem de empurrar.","Ela não é um enigma à espera de solução. É uma sala escura com o projetor ainda rodando. Como nos bons filmes, há sempre uma distância entre aquilo que se vê, aquilo que se sente e aquilo que permanece depois que a tela escurece. É exatamente nessa distância que Gisele mora."],"screen":{"film":"tt0076162","video":"curadores/gisele-britto-tela.mp4","poster":"curadores/gisele-britto-tela.webp"}}];
 const CUR = Object.fromEntries(CURATORS.map(c=>[c.id,c]));
 // fotos em WebP em várias larguras: <base>-<largura>.webp
 const curPhoto = (c, w) => `${c.photo.base}-${c.photo.widths.find(x=>x>=w) ?? c.photo.widths.at(-1)}.webp`;
@@ -638,18 +635,6 @@ document.addEventListener("click", e=>{
 });
 $("dlg").addEventListener("click", e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
 $("dlg").addEventListener("close", ()=>{ stripsApply(); const v=$("vid"); if(v){ if(EMBED) v.remove(); else { v.pause(); v.removeAttribute("src"); v.load(); } } });
-// nuvem: os destaques da curadoria primeiro (FEATURED), depois os que têm cartaz e trailer, na ordem da planilha
-// posições fixas em volta da cabeça: [x %, y %, tamanho em cqi, profundidade]
-const CLOUD = [[16,3,9,.32],[72,0,7,.18],[44,11,5.5,.5],[90,13,8,.28],[8,21,6,.14],[62,22,9.5,.42],[28,31,6.5,.24],[94,34,6,.46],[4,42,7.5,.34],[80,46,6.5,.2],[20,54,5.5,.5],[96,58,7,.3],[2,66,6,.4],[52,38,5,.58]];
-function curCloud(l){
-  const pick=[...l.filter(m=>FEATURED.includes(m.id)), ...l.filter(m=>!FEATURED.includes(m.id) && m.poster && hasTrailer(m)), ...l].filter((m,k,a)=>a.indexOf(m)===k).slice(0,CLOUD.length);
-  return pick.map((m,k)=>{ const [x,y,sz,d]=CLOUD[k]; return `<span style="--x:${x}%;--y:${y}%;--s:${sz}cqi;--d:${d}">${esc(m.title)}</span>`; }).join("");
-}
-function curParallax(){
-  const el=$("curator"), cl=el.querySelector(".cur-cloud"); if(el.hidden || !cl || RM) return;
-  cl.style.setProperty("--sy", Math.round(el.getBoundingClientRect().top));
-}
-addEventListener("scroll", ()=>requestAnimationFrame(curParallax), {passive:true});
 // ---- Página do curador: retrato, nome, números e bio; o catálogo abaixo fica restrito aos filmes dele ----
 function renderCurator(){
   const c=CUR[state.cur], el=$("curator");
@@ -657,11 +642,10 @@ function renderCurator(){
   if(!c || el.dataset.id===c.id) return;
   el.dataset.id=c.id; el.style.setProperty("--cur", c.color || "var(--accent)");
   const words=c.name.split(/\s+/);
-  requestAnimationFrame(curParallax);
   const l=MOVIES.filter(m=>m.cur.includes(c.id)), ys=l.map(m=>m.year).filter(Boolean);
   const nc=new Set(l.flatMap(m=>m.countries)).size, ns=new Set(l.flatMap(m=>m.cats)).size;
   el.innerHTML = `<div class="wrap">
-    <figure class="cur-photo"><div class="cur-cloud" aria-hidden="true">${curCloud(l)}</div><div class="cur-screen"></div><img src="${esc(curPhoto(c,800))}" srcset="${esc(curSrcset(c))}" sizes="(max-width:760px) min(calc(100vw - 32px),380px),400px" width="800" height="800" alt="Retrato de ${esc(c.name)}"></figure>
+    <figure class="cur-photo"><div class="cur-screen">${c.screen?`<video muted loop playsinline ${RM?"":"autoplay"} preload="auto" poster="${esc(c.screen.poster)}" src="${esc(c.screen.video)}" aria-hidden="true"></video>`:""}</div><img src="${esc(curPhoto(c,800))}" srcset="${esc(curSrcset(c))}" sizes="(max-width:760px) min(calc(100vw - 32px),380px),400px" width="800" height="800" alt="Retrato de ${esc(c.name)}"></figure>
     <div><a class="cur-back" href="#">← Todo o catálogo</a>
       <div class="cur-kick">${esc(c.role)} da Cinemateca Estranha</div>
       <h1 id="curName">${esc(words.slice(0,-1).join(" "))} <span>${esc(words.at(-1))}</span></h1>

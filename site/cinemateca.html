@@ -304,8 +304,9 @@ body{overflow-x:clip}
   radial-gradient(110% 80% at 50% 0%,color-mix(in srgb,var(--cur) 60%,transparent),transparent 72%),
   linear-gradient(#2b2333,#120f18)}
 /* trecho curto de um filme da curadoria passando na tela (sem som, em loop); o brilho e a base escura ficam por cima */
-.cur-screen video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.cur-screen::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(color-mix(in srgb,var(--cur) 30%,transparent),transparent 45%),linear-gradient(to top,rgb(0 0 0 / .5),transparent 55%)}
+/* parallax: o vídeo é mais alto que a tela e desce mais devagar que a página (--sy = topo da seção, vindo do scroll) */
+.cur-screen video{position:absolute;inset:-18cqi 0;width:100%;height:calc(100% + 36cqi);object-fit:cover;translate:0 clamp(-18cqi,calc(var(--sy,0) * -.3px),18cqi)}
+.cur-screen::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgb(0 0 0 / .5),transparent 55%)}
 /* granulação de película */
 .cur-screen::after{content:"";position:absolute;inset:0;z-index:2;opacity:.22;mix-blend-mode:overlay;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .cur-photo img{position:absolute;inset:auto 0 0;width:100%;height:100cqi;filter:drop-shadow(0 10px 22px rgb(0 0 0 / .6));animation:curRise 1.2s cubic-bezier(.2,.7,.2,1) both}
@@ -642,6 +643,7 @@ function renderCurator(){
   if(!c || el.dataset.id===c.id) return;
   el.dataset.id=c.id; el.style.setProperty("--cur", c.color || "var(--accent)");
   const words=c.name.split(/\s+/);
+  requestAnimationFrame(curParallax);
   const l=MOVIES.filter(m=>m.cur.includes(c.id)), ys=l.map(m=>m.year).filter(Boolean);
   const nc=new Set(l.flatMap(m=>m.countries)).size, ns=new Set(l.flatMap(m=>m.cats)).size;
   el.innerHTML = `<div class="wrap">
@@ -661,6 +663,11 @@ $("curator").addEventListener("click", e=>{
   try{ history.pushState(null,"",location.pathname+location.search); }catch(_){}
   render(); window.scrollTo({top:0});
 });
+function curParallax(){
+  const el=$("curator"), sc=el.querySelector(".cur-screen"); if(el.hidden || !sc || RM) return;
+  sc.style.setProperty("--sy", Math.round(el.getBoundingClientRect().top));
+}
+addEventListener("scroll", ()=>requestAnimationFrame(curParallax), {passive:true});
 addEventListener("hashchange", ()=>{ parseHash(); $("q").value=state.q; writeHash(); render(); window.scrollTo({top:0}); });
 // ---- Hero: destaques com trailer mudo ao fundo ----
 const FEATURED = ["tt0076162","tt0082933","tt0071615","tt1441395","tt0074486","tt0076786","tt3908142","tt7984734","tt1191111","tt0013257","tt0083931","tt0067866","tt5278832","tt0079944"];

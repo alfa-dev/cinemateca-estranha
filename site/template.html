@@ -44,6 +44,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .brand b{font:900 clamp(26px,4vw,38px)/.9 var(--display);letter-spacing:.01em;text-transform:uppercase}
 .brand b span{color:var(--accent)}
 .brand .home{color:inherit;text-decoration:none}
+.brand b i{font-style:normal}
 .brand small{font:500 11px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:5px}
 .search{position:relative;flex:1 1 340px;max-width:560px}
 .search input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:11px 44px 11px 42px;font-size:15px}
@@ -140,6 +141,17 @@ dialog::backdrop{background:rgb(8 6 14 / .72);backdrop-filter:blur(3px)}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:6px}
 .close{position:absolute;right:12px;top:12px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:18px;line-height:1}
 .note{font-size:12px;color:var(--muted)}
+/* celular: ao rolar, o cabeçalho encolhe para o monograma "CE" e a busca, numa linha só */
+@media (max-width:640px){
+  .top.compact .wrap{flex-wrap:nowrap;padding-block:8px;gap:12px}
+  .top.compact .brand{margin-right:0}
+  .top.compact .brand b{font-size:30px}
+  .top.compact .brand b i,.top.compact .brand small,.top.compact .tools{display:none}
+  .top.compact .search{order:0;flex:1 1 auto}
+  .top.compact .search input{padding-block:8px}
+  /* a hero rola junto com a página em vez de recolher numa faixa */
+  .hero{position:relative}
+}
 @media (max-width:640px){
   .sheet{grid-template-columns:1fr}
   .sheet .poster{border-radius:10px 10px 0 0;min-height:0;aspect-ratio:16/10}
@@ -331,7 +343,7 @@ body{overflow-x:clip}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><a class="home" href="#" aria-label="Cinemateca Estranha: todo o catálogo"><b>Cinemateca <span>Estranha</span></b></a><small id="tagline">filmes de culto · 5 sessões</small></div>
+    <div class="brand"><a class="home" href="#" aria-label="Cinemateca Estranha: todo o catálogo"><b>C<i>inemateca </i><span>E<i>stranha</i></span></b></a><small id="tagline">filmes de culto · 5 sessões</small></div>
     <label class="search">
       <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="Buscar título, diretor, produtora, país, elenco…" autocomplete="off" aria-label="Buscar filmes">
@@ -816,13 +828,18 @@ $("main").addEventListener("click", e=>{
   stripsApply();
 });
 // top negativo: a hero rola até restar a faixa e então gruda logo abaixo do cabeçalho
+const MOBILE = matchMedia("(max-width:640px)");
 function heroStick(){
-  const hdr=document.querySelector("header.top").getBoundingClientRect().bottom;
+  // celular: cabeçalho compacto depois de rolar (com folga entre ligar e desligar, porque encolher o cabeçalho sobe a página)
+  const top=document.querySelector("header.top"), y=scrollY;
+  top.classList.toggle("compact", MOBILE.matches && (y>140 || (top.classList.contains("compact") && y>24)));
+  const hdr=top.getBoundingClientRect().bottom;
   document.documentElement.style.setProperty("--hdr", hdr+"px");
   const h=$("hero"); if(h.hidden) return;
   // a hero recolhida some quando a primeira sessão chega sob o cabeçalho, para os títulos das sessões grudarem no lugar dela
   const first=document.querySelector("#main .section"), covered=!!first && first.getBoundingClientRect().top<=hdr+1;
   if(covered!==hero.covered){ hero.covered=covered; h.classList.toggle("covered", covered); heroApply(); }
+  if(MOBILE.matches){ h.style.top=""; h.style.setProperty("--p",0); h.classList.remove("stuck"); return; }
   const travel=h.offsetHeight - parseFloat(getComputedStyle(h).getPropertyValue("--band"));
   h.style.top=(hdr - travel)+"px";
   const p=Math.min(1, Math.max(0, (hdr - h.getBoundingClientRect().top)/travel));

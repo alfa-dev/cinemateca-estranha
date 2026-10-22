@@ -69,8 +69,9 @@ Depois de editar, rode `python3 scripts/finalize.py .`.
 
 ## Tela atrás do retrato
 
-- **Tela, no desktop:** a coluna do retrato vai de cima a baixo da seção, e a tela ocupa essa coluna inteira. A figura fica presa na base da janela (`position: sticky`) enquanto o texto rola, com o trecho passando atrás.
-- **Tela, no celular (≤760px):** fica no topo, de borda a borda, com a figura encostada embaixo.
+- **Fundo, não conteúdo:** a tela é uma camada de fundo (`.cur-bg`) na mesma célula do grid que o retrato. Ela não tem conteúdo em fluxo, então não muda a altura de nada: quem define a altura da seção é o texto.
+- **Desktop:** o fundo vai de cima a baixo da coluna do retrato. O retrato fica centralizado na vertical ao lado do texto, como sempre esteve.
+- **Celular (≤760px):** o fundo vai de borda a borda atrás do retrato, que fica centralizado no topo.
 - **Vídeo:** passa um trecho curto de um filme da curadoria (Gisele: *Hausu*, 1977). É mudo, em loop e começa sozinho.
 - **Dois cortes, um para cada formato de tela:** o vídeo é recortado no formato certo, em vez de ser esticado. `video`/`poster` são o corte alto do desktop; `videoMobile`/`posterMobile`, o corte 4:5 do celular. A página escolhe pela largura ao abrir o perfil.
 - **Camadas por cima do vídeo:**

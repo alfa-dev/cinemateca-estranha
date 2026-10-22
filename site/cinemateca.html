@@ -321,14 +321,16 @@ body{overflow-x:clip}
 /* Página do curador: retrato, nome, números e bio; tela sempre escura, como a hero (ver docs/pagina-do-curador.md) */
 .curator{--cur:var(--accent);background:var(--bg);border-bottom:1px solid var(--line);overflow:clip}
 .curator[hidden]{display:none}
-.curator .wrap{display:grid;grid-template-columns:minmax(240px,400px) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:start}
-/* a coluna do retrato vai de cima a baixo da seção (a tela com o trecho ocupa a altura toda); o respiro fica só no texto */
+.curator .wrap{display:grid;grid-template-columns:minmax(240px,400px) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center}
+/* fundo da coluna do retrato: ocupa a mesma célula do grid que a foto, esticado de cima a baixo da seção,
+   mas sem conteúdo em fluxo, então não muda a altura de nada; o respiro fica só no texto */
+.cur-bg{grid-area:1/1;align-self:stretch;position:relative;container-type:inline-size}
 .cur-text{padding-block:44px 48px}
 /* retrato recortado (fundo transparente) na frente de uma tela de cinema que ocupa a altura toda da foto,
    passando um trecho curto, desfocado e em preto e branco de um filme da curadoria (ver docs/pagina-do-curador.md).
    Serve para qualquer curador com foto no mesmo formato: quadrada, figura encostada na borda de baixo */
-.cur-photo{position:relative;margin:0;isolation:isolate;align-self:stretch;min-height:113cqi;container-type:inline-size;clip-path:inset(-50% -50% 0 -50%);display:flex;flex-direction:column;justify-content:flex-end}
-.cur-screen{position:absolute;inset:0;z-index:-1;overflow:hidden;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14);background:
+.cur-photo{grid-area:1/1;position:relative;margin:0;aspect-ratio:1/1.13;container-type:inline-size}
+.cur-screen{position:absolute;inset:0;overflow:hidden;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14);background:
   radial-gradient(110% 80% at 50% 0%,color-mix(in srgb,var(--cur) 60%,transparent),transparent 72%),
   linear-gradient(#2b2333,#120f18)}
 /* parallax: o vídeo é mais alto que a tela e desce mais devagar que a página (--sy = topo da seção, vindo do scroll) */
@@ -337,8 +339,7 @@ body{overflow-x:clip}
 .cur-screen::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgb(0 0 0 / .5),transparent 55%)}
 /* granulação de película */
 .cur-screen::after{content:"";position:absolute;inset:0;z-index:2;opacity:.22;mix-blend-mode:overlay;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-/* a figura fica presa na base da tela enquanto o texto rola, com o trecho passando atrás */
-.cur-photo img{position:sticky;bottom:0;flex:none;width:100%;height:100cqi;filter:drop-shadow(0 10px 22px rgb(0 0 0 / .6));animation:curRise 1.2s cubic-bezier(.2,.7,.2,1) both}
+.cur-photo img{position:absolute;inset:auto 0 0;width:100%;height:100cqi;filter:drop-shadow(0 10px 22px rgb(0 0 0 / .6));animation:curRise 1.2s cubic-bezier(.2,.7,.2,1) both}
 @keyframes curRise{from{opacity:0;translate:0 10%}}
 @media (prefers-reduced-motion:reduce){.cur-photo img{animation:none}}
 .cur-back{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none}
@@ -359,9 +360,9 @@ body{overflow-x:clip}
 @media (max-width:760px){
   .curator .wrap{grid-template-columns:minmax(0,1fr);gap:0}
   .cur-text{padding-block:24px 36px}
-  /* celular: a tela vai de borda a borda no topo, o retrato encostado embaixo dela */
-  .cur-photo{margin-inline:calc(50% - 50vw);min-height:calc(min(100vw,420px) * 1.25)}
-  .cur-photo img{align-self:center;width:min(100vw,420px);height:min(100vw,420px)}
+  /* celular: o fundo vai de borda a borda atrás do retrato, que fica centralizado como antes */
+  .cur-bg{margin-inline:calc(50% - 50vw)}
+  .cur-photo{width:min(100%,380px);justify-self:center;margin-top:24px}
   .cur-kick{margin-top:14px}
 }
 /* Rodapé */
@@ -681,7 +682,8 @@ function renderCurator(){
   const l=MOVIES.filter(m=>m.cur.includes(c.id)), ys=l.map(m=>m.year).filter(Boolean);
   const nc=new Set(l.flatMap(m=>m.countries)).size, ns=new Set(l.flatMap(m=>m.cats)).size;
   el.innerHTML = `<div class="wrap">
-    <figure class="cur-photo"><div class="cur-screen">${c.screen?curScreen(c.screen):""}</div><img src="${esc(curPhoto(c,800))}" srcset="${esc(curSrcset(c))}" sizes="(max-width:760px) min(calc(100vw - 32px),380px),400px" width="800" height="800" alt="Retrato de ${esc(c.name)}"></figure>
+    <div class="cur-bg" aria-hidden="true"><div class="cur-screen">${c.screen?curScreen(c.screen):""}</div></div>
+    <figure class="cur-photo"><img src="${esc(curPhoto(c,800))}" srcset="${esc(curSrcset(c))}" sizes="(max-width:760px) min(calc(100vw - 32px),380px),400px" width="800" height="800" alt="Retrato de ${esc(c.name)}"></figure>
     <div class="cur-text"><a class="cur-back" href="#">← Todo o catálogo</a>
       <div class="cur-kick">${esc(c.role)} da Cinemateca Estranha</div>
       <h1 id="curName">${esc(words.slice(0,-1).join(" "))} <span>${esc(words.at(-1))}</span></h1>

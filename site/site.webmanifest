@@ -1,0 +1,29 @@
+{
+  "name": "Cinemateca Estranha",
+  "short_name": "Cinemateca",
+  "description": "248 filmes estranhos, cult e de horror de 42 países, com trailers, filtros e onde assistir no Brasil. Curadoria de Gisele Britto.",
+  "lang": "pt-BR",
+  "start_url": "cinemateca.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#121019",
+  "theme_color": "#121019",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

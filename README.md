@@ -33,8 +33,13 @@ python3 scripts/build.py .         # junta duplicatas, baixa capas → movies.fi
 python3 scripts/wd.py .            # Wikidata: diretor e produtora → wd.json
 python3 scripts/jw.py .            # JustWatch Brasil: onde assistir → jw.json (lento, respeita rate limit)
 python3 scripts/trailers.py .      # yt-dlp + ffmpeg → trailers/<id>.mp4 (precisa de requirements.txt e ffmpeg)
-python3 scripts/finalize.py .      # monta site/cinemateca.html
+python3 scripts/share.py .         # imagens de compartilhamento (site/share/) e ícones (precisa do Chrome e do ImageMagick)
+python3 scripts/finalize.py .      # monta site/cinemateca.html, as páginas de compartilhamento dos curadores e as tags
 ```
+
+## Compartilhamento
+
+`finalize.py` põe no `<head>` as tags Open Graph (Facebook, WhatsApp, LinkedIn, Telegram, Slack, Discord, Pinterest, iMessage), o cartão do X/Twitter, schema.org, ícones e o manifest, no `site/cinemateca.html` e no `index.html` da raiz. Os robôs não rodam JS nem leem o `#`, então cada curador tem uma página estática em `site/curador/<id>.html` com o próprio cartão (`site/share/<id>.jpg`), que redireciona para o perfil: é esse o link para compartilhar um curador.
 
 ## Curadores
 

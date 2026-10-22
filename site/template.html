@@ -781,9 +781,13 @@ new IntersectionObserver(([e])=>{ hero.visible=e.isIntersecting; heroApply(); },
 // top negativo: a hero rola até restar a faixa e então gruda logo abaixo do cabeçalho
 const MOBILE = matchMedia("(max-width:640px)");
 function heroStick(){
-  // celular: cabeçalho compacto depois de rolar (com folga entre ligar e desligar, porque encolher o cabeçalho sobe a página)
-  const top=document.querySelector("header.top"), y=scrollY;
-  top.classList.toggle("compact", MOBILE.matches && (y>140 || (top.classList.contains("compact") && y>24)));
+  // celular: cabeçalho compacto depois de rolar. Ao encolher, o navegador puxa o scroll para cima na mesma medida
+  // (scroll anchoring); por isso só volta ao normal abaixo de 140 menos o quanto o cabeçalho encolheu, senão alterna sem parar
+  const top=document.querySelector("header.top"), y=scrollY, on=top.classList.contains("compact");
+  top._h = top._h || {};
+  top._h[on?"c":"n"] = top.offsetHeight;
+  const shrink = (top._h.n||0) - (top._h.c||0);
+  top.classList.toggle("compact", MOBILE.matches && (on ? y > 140 - shrink - 24 : y > 140));
   const hdr=top.getBoundingClientRect().bottom;
   document.documentElement.style.setProperty("--hdr", hdr+"px");
   const h=$("hero"), band=h.hidden||MOBILE.matches ? 0 : parseFloat(getComputedStyle(h).getPropertyValue("--band"));

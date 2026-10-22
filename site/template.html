@@ -293,10 +293,19 @@ body{overflow-x:clip}
 .curator{background:var(--bg);border-bottom:1px solid var(--line);overflow:hidden}
 .curator[hidden]{display:none}
 .curator .wrap{display:grid;grid-template-columns:minmax(240px,400px) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center;padding-block:44px 48px}
-.cur-photo{position:relative;margin:0;isolation:isolate}
-/* recorte com transparência: um halo quente atrás separa o cabelo escuro do fundo */
-.cur-photo::before{content:"";position:absolute;inset:8% 6% 4%;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 22%,transparent),transparent);filter:blur(24px)}
-.cur-photo img{display:block;width:100%;height:auto;aspect-ratio:1}
+/* retrato recortado (fundo transparente) saindo de uma tela de cinema: o primeiro nome vazado atrás,
+   a tela iluminada na parte de baixo e a figura por cima, com a cabeça passando da borda da tela.
+   Serve para qualquer curador com foto no mesmo formato: quadrada, figura encostada na borda de baixo */
+.cur-photo{position:relative;margin:0;isolation:isolate;aspect-ratio:1;container-type:inline-size;--mx:0;--my:0;clip-path:inset(-50% -50% 0 -50%)}
+.cur-name{position:absolute;left:-6%;right:-6%;top:3%;z-index:-2;text-align:center;white-space:nowrap;font:900 min(calc(190cqi / var(--len)),62cqi)/.8 var(--display);text-transform:uppercase;color:transparent;-webkit-text-stroke:1.5px color-mix(in srgb,var(--accent) 75%,transparent);translate:calc(var(--mx) * -16px) calc(var(--my) * -10px);transition:translate .5s ease-out}
+.cur-screen{position:absolute;inset:36% 0 0;z-index:-1;border-radius:8px 8px 0 0;overflow:hidden;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14);background:
+  radial-gradient(110% 80% at 50% 0%,color-mix(in srgb,var(--accent) 60%,transparent),transparent 72%),
+  linear-gradient(#2b2333,#120f18)}
+/* granulação de película */
+.cur-screen::after{content:"";position:absolute;inset:0;opacity:.22;mix-blend-mode:overlay;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.cur-photo img{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 10px 22px rgb(0 0 0 / .6));translate:calc(var(--mx) * 10px) calc(var(--my) * 6px);transition:translate .5s ease-out;animation:curRise 1.2s cubic-bezier(.2,.7,.2,1) both}
+@keyframes curRise{from{opacity:0;translate:0 10%}}
+@media (prefers-reduced-motion:reduce){.cur-photo img{animation:none}}
 .cur-back{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none}
 .cur-back:hover{color:var(--accent)}
 .cur-kick{margin-top:22px;font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
@@ -309,7 +318,7 @@ body{overflow-x:clip}
 .cur-bio p:first-child::first-letter{float:left;font:900 68px/.8 var(--display);color:var(--accent);margin:6px 10px 0 0}
 @media (max-width:760px){
   .curator .wrap{grid-template-columns:minmax(0,1fr);padding-block:28px 36px}
-  .cur-photo{width:min(100%,380px);justify-self:center;margin-bottom:-12px}
+  .cur-photo{width:min(100%,380px);justify-self:center}
   .cur-kick{margin-top:14px}
 }
 /* Rodapé */
@@ -633,7 +642,7 @@ function renderCurator(){
   const l=MOVIES.filter(m=>m.cur.includes(c.id)), ys=l.map(m=>m.year).filter(Boolean);
   const nc=new Set(l.flatMap(m=>m.countries)).size, ns=new Set(l.flatMap(m=>m.cats)).size;
   el.innerHTML = `<div class="wrap">
-    <figure class="cur-photo"><img src="${esc(curPhoto(c,800))}" srcset="${esc(curSrcset(c))}" sizes="(max-width:760px) min(calc(100vw - 32px),380px),400px" width="800" height="800" alt="Retrato de ${esc(c.name)}"></figure>
+    <figure class="cur-photo"><span class="cur-name" style="--len:${c.name.split(" ")[0].length}" aria-hidden="true">${esc(c.name.split(" ")[0])}</span><div class="cur-screen"></div><img src="${esc(curPhoto(c,800))}" srcset="${esc(curSrcset(c))}" sizes="(max-width:760px) min(calc(100vw - 32px),380px),400px" width="800" height="800" alt="Retrato de ${esc(c.name)}"></figure>
     <div><a class="cur-back" href="#">← Todo o catálogo</a>
       <div class="cur-kick">${esc(c.role)} da Cinemateca Estranha</div>
       <h1 id="curName">${esc(c.name)}</h1>
@@ -649,6 +658,14 @@ $("curator").addEventListener("click", e=>{
   try{ history.pushState(null,"",location.pathname+location.search); }catch(_){}
   render(); window.scrollTo({top:0});
 });
+// a figura acompanha o mouse de leve; o nome atrás vai no sentido contrário
+$("curator").addEventListener("pointermove", e=>{
+  const f=e.currentTarget.querySelector(".cur-photo"); if(!f || RM || e.pointerType!=="mouse") return;
+  const r=f.getBoundingClientRect();
+  f.style.setProperty("--mx", Math.max(-1,Math.min(1,(e.clientX-r.left)/r.width*2-1)).toFixed(3));
+  f.style.setProperty("--my", Math.max(-1,Math.min(1,(e.clientY-r.top)/r.height*2-1)).toFixed(3));
+});
+$("curator").addEventListener("pointerleave", e=>{ const f=e.currentTarget.querySelector(".cur-photo"); if(f){ f.style.setProperty("--mx",0); f.style.setProperty("--my",0); } });
 addEventListener("hashchange", ()=>{ parseHash(); $("q").value=state.q; writeHash(); render(); window.scrollTo({top:0}); });
 // ---- Hero: destaques com trailer mudo ao fundo ----
 const FEATURED = ["tt0076162","tt0082933","tt0071615","tt1441395","tt0074486","tt0076786","tt3908142","tt7984734","tt1191111","tt0013257","tt0083931","tt0067866","tt5278832","tt0079944"];

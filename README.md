@@ -19,7 +19,7 @@ Tem capas, trailers que tocam dentro da página, categorias, filtros (gênero, d
 | `site/cinemateca.html` | página final |
 | `site/posters.json` | capas em base64, carregadas pela página |
 | `curators.json` | curadores: nome, foto, bio e (opcional) a lista `films` de ids de filmes |
-| `site/curadores/` | retratos dos curadores em WebP com transparência, em várias larguras (`<id>-<largura>.webp`) |
+| `site/curadores/` | retratos dos curadores em WebP com transparência, em várias larguras (`<id>-<largura>.webp`); quadrados, figura recortada encostada na borda de baixo |
 
 ## Pipeline
 

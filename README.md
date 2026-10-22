@@ -40,6 +40,8 @@ python3 scripts/finalize.py .      # monta site/cinemateca.html
 
 Cada curador tem uma página em `#curador/<id>`, com retrato, números e bio, e um botão que leva ao catálogo filtrado pela curadoria dele. Para adicionar um, inclua uma entrada em `curators.json` com `color` (a cor do curador na página dele), `screen` (um trecho curto de um filme da curadoria, MP4 mudo de ~6 s em 640×384, com um quadro em WebP de pôster) e `films` (ids do IMDb, como em `movies.final.json`), gere a foto em `site/curadores/` (`cwebp -resize <largura> 0 -q 78 -alpha_q 90 foto.png -o site/curadores/<id>-<largura>.webp` para 96, 480, 800 e 1200) e rode `finalize.py`. Um filme pode ter vários curadores: basta estar no `films` de cada um. Filmes que não estão em nenhuma lista ficam com o curador marcado `"default": true` (hoje, Gisele Britto, com todos os 248); para um filme ser dela e de outro curador, liste-o também no `films` dela.
 
+Detalhes da página de perfil (layout, retrato, tela com o trecho de filme e como montá-lo) em [`docs/pagina-do-curador.md`](docs/pagina-do-curador.md).
+
 ## Trailers
 
 Os MP4 (~700 MB, 360p) não estão no git. No Artifact a página os carrega de `/_blob/<asset id>`.

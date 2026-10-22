@@ -291,21 +291,20 @@ body{overflow-x:clip}
 .sband .hero-mini{opacity:1;visibility:visible}
 .hero-mini .t small span{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--d);margin-right:8px;vertical-align:1px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-/* Página do curador: retrato impresso em papel, nome e bio; tela sempre escura, como a hero */
+/* Página do curador: retrato, nome, números e bio; tela sempre escura, como a hero (ver docs/pagina-do-curador.md) */
 .curator{--cur:var(--accent);background:var(--bg);border-bottom:1px solid var(--line);overflow:hidden}
 .curator[hidden]{display:none}
 .curator .wrap{display:grid;grid-template-columns:minmax(240px,400px) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center;padding-block:44px 48px}
-/* retrato recortado (fundo transparente) na frente de uma tela de cinema: a tela fica atrás da cabeça,
-   passando um trecho curto de um filme da curadoria, e some em degradê na direção do corpo.
+/* retrato recortado (fundo transparente) na frente de uma tela de cinema que ocupa a altura toda da foto,
+   passando um trecho curto, desfocado e em preto e branco de um filme da curadoria (ver docs/pagina-do-curador.md).
    Serve para qualquer curador com foto no mesmo formato: quadrada, figura encostada na borda de baixo */
 .cur-photo{position:relative;margin:0;isolation:isolate;aspect-ratio:1/1.13;container-type:inline-size;clip-path:inset(-50% -50% 0 -50%)}
-/* nome completo vazado numa linha acima da figura (a cabeça encosta nele); como na marca, a última palavra vai na cor do curador */
-.cur-screen{position:absolute;inset:0 0 auto;height:68cqi;z-index:-1;border-radius:8px;-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent);overflow:hidden;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14);background:
+.cur-screen{position:absolute;inset:0;z-index:-1;border-radius:8px;overflow:hidden;box-shadow:inset 0 1px 0 rgb(255 255 255 / .14);background:
   radial-gradient(110% 80% at 50% 0%,color-mix(in srgb,var(--cur) 60%,transparent),transparent 72%),
   linear-gradient(#2b2333,#120f18)}
-/* trecho curto de um filme da curadoria passando na tela (sem som, em loop); o brilho e a base escura ficam por cima */
 /* parallax: o vídeo é mais alto que a tela e desce mais devagar que a página (--sy = topo da seção, vindo do scroll) */
 .cur-screen video{position:absolute;inset:-18cqi 0;width:100%;height:calc(100% + 36cqi);object-fit:cover;translate:0 clamp(-18cqi,calc(var(--sy,0) * -.3px),18cqi)}
+/* base escurecida, para o corpo da figura não se perder num quadro claro */
 .cur-screen::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgb(0 0 0 / .5),transparent 55%)}
 /* granulação de película */
 .cur-screen::after{content:"";position:absolute;inset:0;z-index:2;opacity:.22;mix-blend-mode:overlay;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}

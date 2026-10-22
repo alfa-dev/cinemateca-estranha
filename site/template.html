@@ -314,13 +314,9 @@ body{overflow-x:clip}
 .cur-actions{margin-top:28px}
 /* trechos em destaque: **assim** na bio do curators.json */
 .cur-bio strong{font-weight:600;color:#fff;background:linear-gradient(transparent 62%,color-mix(in srgb,var(--cur) 32%,transparent) 62%)}
-/* capitular: luz de filme noir dentro da letra — feixes de persiana na diagonal cortando a cor do curador,
-   que vai da luz no alto ao escuro embaixo, com granulação; tudo recortado no desenho da letra */
-.cur-cap{float:left;font:900 152px/.74 var(--display);margin:10px 16px 0 -2px;padding:0 2px;color:transparent;-webkit-background-clip:text;background-clip:text;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .28 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-    repeating-linear-gradient(-24deg,transparent 0 13px,rgb(8 6 14 / .62) 13px 19px),
-    radial-gradient(130% 90% at 28% 0%,#fff 0%,color-mix(in srgb,var(--cur) 70%,#fff) 20%,var(--cur) 52%,color-mix(in srgb,var(--cur) 70%,#000) 100%);
+/* capitular: duas cores com corte seco no meio, a de baixo na cor do curador e a de cima mais clara */
+.cur-cap{float:left;font:900 152px/.74 var(--display);margin:10px 16px 0 -2px;padding:0 2px;color:transparent;
+  background:linear-gradient(to top,var(--cur) 50%,color-mix(in srgb,var(--cur) 45%,#fff) 50%);
   -webkit-background-clip:text;background-clip:text}
 @media (max-width:760px){
   .curator .wrap{grid-template-columns:minmax(0,1fr);padding-block:28px 36px}

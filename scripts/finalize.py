@@ -14,6 +14,12 @@ for l in open(S+'/assets.map'):
   assert re.fullmatch(r'[0-9a-f]{32}',aid),l
   if os.path.exists(f): assert os.path.getsize(f)==int(size),('size mismatch',l)
   AM[k]=aid
+# curadores: cada um pode listar seus filmes em "films"; o que não estiver em nenhuma lista fica com o "default"
+CUR=json.load(open(S+'/curators.json'))
+CDEF=next(c['id'] for c in CUR if c.get('default'))
+CBY={}
+for c in CUR:
+  for f in c.get('films',[]): CBY.setdefault(f,[]).append(c['id'])
 YT=dict(l.split() for l in open(S+'/trailers.yt')) if os.path.exists(S+'/trailers.yt') else {}
 T={'FLATRATE':'Assinatura','FREE':'Grátis','ADS':'Grátis com anúncios','RENT':'Aluguel','BUY':'Compra'}
 def pname(n):
@@ -37,7 +43,9 @@ for m in M:
   a=AM.get(m['id'])
   if a: m['tr']='/_blob/'+a
   if m['id'] in YT: m['ytt']=YT[m['id']]
-d=json.dumps(M,ensure_ascii=False,separators=(',',':')).replace('</','<\\/')
+  m['cur']=CBY.get(m['id'],[CDEF])
+js=lambda x: json.dumps(x,ensure_ascii=False,separators=(',',':')).replace('</','<\\/')
 t=open(S+'/site/template.html').read()
-open(S+'/site/cinemateca.html','w').write(t.replace('__DATA__',d))
-print(len(M),'filmes |',sum(1 for m in M if m['directors']),'c/ diretor |',sum(1 for m in M if m['watch']),'c/ streaming |',sum(1 for m in M if m.get('tr')),'c/ trailer')
+cur=[{k:v for k,v in c.items() if k!='films'} for c in CUR]
+open(S+'/site/cinemateca.html','w').write(t.replace('__CURATORS__',js(cur)).replace('__DATA__',js(M)))
+print(len(M),'filmes |',sum(1 for m in M if m['directors']),'c/ diretor |',sum(1 for m in M if m['watch']),'c/ streaming |',sum(1 for m in M if m.get('tr')),'c/ trailer |',' | '.join('%s: %d'%(c['name'],sum(1 for m in M if c['id'] in m['cur'])) for c in CUR))

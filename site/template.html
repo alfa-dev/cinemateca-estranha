@@ -43,6 +43,9 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .brand{display:flex;flex-direction:column;line-height:.9;margin-right:auto}
 .brand b{font:900 clamp(26px,4vw,38px)/.9 var(--display);letter-spacing:.01em;text-transform:uppercase}
 .brand b span{color:var(--accent)}
+.brand .home{color:inherit;text-decoration:none}
+.brand small a{color:var(--fg);text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:2px}
+.brand small a:hover{color:var(--accent)}
 .brand small{font:500 11px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:5px}
 .search{position:relative;flex:1 1 340px;max-width:560px}
 .search input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:11px 44px 11px 42px;font-size:15px}
@@ -199,7 +202,7 @@ dialog{width:min(980px,calc(100vw - 24px))}
 }
 /* Hero: destaques em rodízio, trailer mudo ao fundo; a barra de progresso da miniatura é o relógio do rodízio */
 /* tela de cinema: sempre escura, mesmo no tema claro */
-.hero,.sband{--bg:#121019;--fg:#eeeaf4;--muted:#b4adc4;--surface:#1b1824;--raise:#252131;--line:#3a3448;--accent:#f4a640;--on-accent:#1a1206;color-scheme:dark;color:var(--fg)}
+.hero,.sband,.curator{--bg:#121019;--fg:#eeeaf4;--muted:#b4adc4;--surface:#1b1824;--raise:#252131;--line:#3a3448;--accent:#f4a640;--on-accent:#1a1206;color-scheme:dark;color:var(--fg)}
 .hero{position:relative;overflow:hidden;isolation:isolate;min-height:clamp(460px,66vh,680px);display:flex;align-items:flex-end;background:var(--bg)}
 .hero[hidden]{display:none}
 /* ao rolar, a hero sobe até sobrar só a faixa (--band) e gruda sob o cabeçalho; --p vai de 0 (cheia) a 1 (faixa) */
@@ -282,11 +285,41 @@ body{overflow-x:clip}
 .sband .hero-mini{opacity:1;visibility:visible}
 .hero-mini .t small span{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--d);margin-right:8px;vertical-align:1px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Página do curador: retrato impresso em papel, nome e bio; tela sempre escura, como a hero */
+.curator{background:var(--bg);border-bottom:1px solid var(--line);overflow:hidden}
+.curator[hidden]{display:none}
+.curator .wrap{display:grid;grid-template-columns:minmax(240px,400px) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center;padding-block:44px 48px}
+.cur-photo{position:relative;margin:0;background:#fbfaf7;padding:14px 14px 42px;border-radius:2px;box-shadow:var(--shadow);rotate:-1.5deg}
+.cur-photo img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.cur-photo figcaption{position:absolute;left:16px;right:16px;bottom:13px;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#6a6474}
+.cur-back{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none}
+.cur-back:hover{color:var(--accent)}
+.cur-kick{margin-top:22px;font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.curator h1{font:900 clamp(52px,9vw,120px)/.84 var(--display);text-transform:uppercase;margin:10px 0 0;text-wrap:balance;overflow-wrap:anywhere}
+.cur-facts{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:16px;font:13px var(--mono);color:var(--muted)}
+.cur-facts b{color:var(--fg);font-weight:500}
+.cur-bio{display:grid;gap:12px;margin-top:24px;max-width:62ch;font-size:16px;line-height:1.65}
+.cur-bio p{margin:0}
+.cur-bio p:first-child::first-letter{float:left;font:900 68px/.8 var(--display);color:var(--accent);margin:6px 10px 0 0}
+@media (max-width:760px){
+  .curator .wrap{grid-template-columns:minmax(0,1fr);padding-block:28px 36px}
+  .cur-photo{width:min(100%,340px);justify-self:center}
+  .cur-kick{margin-top:14px}
+}
+/* Rodapé */
+.foot{border-top:1px solid var(--line);padding-block:20px calc(20px + env(safe-area-inset-bottom,0px));font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.foot a{color:var(--fg);text-decoration:none;font-weight:600}
+.foot a:hover{color:var(--accent)}
+/* Curadoria na ficha */
+.curlinks{display:flex;gap:8px;flex-wrap:wrap}
+.curlink{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:3px 12px 3px 3px;font-size:14px;font-weight:600;color:var(--fg);text-decoration:none;background:var(--raise)}
+.curlink:hover{border-color:var(--accent)}
+.curlink img{width:28px;height:28px;border-radius:50%;object-fit:cover;object-position:center 30%;background:#fbfaf7}
 </style>
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><b>Cinemateca <span>Estranha</span></b><small id="tagline">filmes de culto · 5 sessões</small></div>
+    <div class="brand"><a class="home" href="#" aria-label="Cinemateca Estranha: todo o catálogo"><b>Cinemateca <span>Estranha</span></b></a><small id="tagline">filmes de culto · 5 sessões</small></div>
     <label class="search">
       <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="Buscar título, diretor, produtora, país, elenco…" autocomplete="off" aria-label="Buscar filmes">
@@ -314,6 +347,8 @@ body{overflow-x:clip}
   <div class="wrap hero-mini" id="heroMini"></div>
 </section>
 
+<section class="curator" id="curator" aria-labelledby="curName" hidden></section>
+
 <div class="wrap">
   <nav class="cats" id="cats" aria-label="Sessões"></nav>
   <div class="fwrap" id="fwrap">
@@ -337,6 +372,7 @@ body{overflow-x:clip}
   </div>
 </div>
 <main class="wrap" id="main"></main>
+<footer class="foot"><div class="wrap">Powered by <a href="https://alfadev.com.br/" target="_blank" rel="noopener">Alfadev</a></div></footer>
 
 <dialog id="dlg" aria-labelledby="dTitle"><div id="dBody"></div></dialog>
 
@@ -350,6 +386,8 @@ const CATS = [
   {id:"thelema", name:"Thelema, Magia e Ocultismo", desc:"Crowley, Kenneth Anger, bruxaria, Lovecraft e documentários sobre o oculto."}
 ];
 const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
+const CURATORS = __CURATORS__;
+const CUR = Object.fromEntries(CURATORS.map(c=>[c.id,c]));
 let POSTERS = {};
 
 const norm = s => (s||"").toString().normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
@@ -364,7 +402,7 @@ MOVIES.forEach((m,i)=>{
   const w=[...stream,...m.flags]; if((m.watch||[]).some(o=>o.t==="Aluguel"||o.t==="Compra")) w.push("Aluguel ou compra");
   m.directors=m.directors||[]; m.studios=m.studios||[];
   m.tags={g:m.genres, r:m.directors, p:m.studios, c:m.countries, d:m.year?[decade(m.year)]:[], w, k:[m.kind||"Longa"]};
-  m.hay=norm([m.title,...m.aka,m.year,...m.genres,...m.countries,m.cast,...m.directors,...m.studios,...m.stream,...m.flags,...m.cats.map(c=>CAT[c].name),m.kind].join(" "));
+  m.hay=norm([m.title,...m.aka,m.year,...m.genres,...m.countries,m.cast,...m.directors,...m.studios,...m.stream,...m.flags,...m.cats.map(c=>CAT[c].name),...m.cur.map(c=>CUR[c].name),m.kind].join(" "));
 });
 
 const FACETS = [
@@ -376,13 +414,24 @@ const FACETS = [
   {k:"w", name:"Onde ver", top:99},
   {k:"k", name:"Formato", top:99, single:true}
 ];
-const state = {cat:"all", q:"", sel:{g:new Set(),r:new Set(),p:new Set(),c:new Set(),d:new Set(),w:new Set(),k:new Set()}, sort:"default", open:{}, pop:null};
+const state = {cat:"all", cur:null, q:"", sel:{g:new Set(),r:new Set(),p:new Set(),c:new Set(),d:new Set(),w:new Set(),k:new Set()}, sort:"default", open:{}, pop:null};
 try{ const s=JSON.parse(localStorage.getItem("cine-sort")); if(s) state.sort=s; }catch(e){}
-const h = location.hash.slice(1); if (CAT[h]) state.cat = h;
+// rotas: #<sessão>, #curador/<id> e #curador/<id>/<sessão>
+function parseHash(){
+  const p=decodeURIComponent(location.hash.slice(1)).split("/"), cur=p[0]==="curador"&&CUR[p[1]]?p[1]:null, c=cur?p[2]:p[0];
+  if(cur!==state.cur){ state.q=""; FACETS.forEach(f=>state.sel[f.k].clear()); }
+  state.cur=cur; state.cat=CAT[c]?c:"all";
+}
+function writeHash(){
+  const h=[...(state.cur?["curador",state.cur]:[]), ...(state.cat!=="all"?[state.cat]:[])].join("/");
+  try{ history.replaceState(null,"",h?"#"+h:location.pathname+location.search); }catch(_){}
+}
+parseHash();
 
 const $ = id => document.getElementById(id);
 
 function matches(m, skip){
+  if (state.cur && !m.cur.includes(state.cur)) return false;
   if (state.cat!=="all" && !m.cats.includes(state.cat)) return false;
   if (state.q){ const words=norm(state.q).split(/\s+/).filter(Boolean); if(!words.every(w=>m.hay.includes(w))) return false; }
   for (const f of FACETS){ if (f.k===skip) continue; for (const v of state.sel[f.k]) if(!m.tags[f.k].includes(v)) return false; }
@@ -411,8 +460,9 @@ function cardHTML(m){
 }
 
 function renderCats(){
-  const counts = {all:MOVIES.length}; CATS.forEach(c=>counts[c.id]=MOVIES.filter(m=>m.cats.includes(c.id)).length);
-  $("cats").innerHTML = [{id:"all",name:"Todas as sessões"},...CATS].map(c=>
+  const base = MOVIES.filter(m=>!state.cur || m.cur.includes(state.cur));
+  const counts = {all:base.length}; CATS.forEach(c=>counts[c.id]=base.filter(m=>m.cats.includes(c.id)).length);
+  $("cats").innerHTML = [{id:"all",name:"Todas as sessões"},...CATS].filter(c=>counts[c.id]||state.cat===c.id).map(c=>
     `<button class="cat" type="button" data-c="${c.id}" aria-pressed="${state.cat===c.id}" style="--dot:${c.id==="all"?"var(--accent)":`var(--c-${c.id})`}"><b>${esc(c.name)}</b><i>${counts[c.id]}</i></button>`).join("");
 }
 function facetEntries(f){
@@ -474,17 +524,17 @@ $("pop").addEventListener("beforetoggle", e=>{
 });
 addEventListener("resize", positionPop); addEventListener("scroll", positionPop, {passive:true});
 function render(){
-  renderCats(); renderFilters(); renderOpts(); renderHero();
+  renderCats(); renderFilters(); renderOpts(); renderCurator(); renderHero();
   const list = sorted(MOVIES.filter(m=>matches(m)));
   const active = state.q || FACETS.some(f=>state.sel[f.k].size);
   $("reset").hidden = !active;
   $("clear").hidden = !state.q;
-  $("count").innerHTML = `<b>${list.length}</b> ${list.length===1?"filme":"filmes"}${state.cat!=="all"?` em ${esc(CAT[state.cat].name)}`:""}`;
+  $("count").innerHTML = `<b>${list.length}</b> ${list.length===1?"filme":"filmes"}${state.cat!=="all"?` em ${esc(CAT[state.cat].name)}`:""}${state.cur?` · curadoria de ${esc(CUR[state.cur].name)}`:""}`;
   document.querySelectorAll("#sort button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s===state.sort));
   const main=$("main");
   if(!list.length){ main.innerHTML=`<div class="empty"><b>Nada na tela</b>Nenhum filme combina com a busca e as tags escolhidas. Tente remover uma tag.</div>`; return; }
   const groups = state.cat==="all" ? CATS.map(c=>({c, items:list.filter(m=>m.cats.includes(c.id))})).filter(g=>g.items.length) : [{c:CAT[state.cat], items:list}];
-  const banded = state.cat==="all" && !active;
+  const banded = state.cat==="all" && !active && !state.cur;
   main.innerHTML = groups.map(({c,items})=>`<section class="section" style="--dot:var(--c-${c.id})">
       ${banded?bandHTML(c):""}<div class="section-head"><h2>${esc(c.name)}</h2><span class="n">${items.length}</span><p>${esc(c.desc)}</p></div>
       <div class="grid">${items.map(cardHTML).join("")}</div></section>`).join("");
@@ -512,6 +562,7 @@ function openMovie(m, play){
       <h2 id="dTitle">${esc(m.title)}</h2>
       ${m.aka.length?`<div class="aka">${m.aka.map(esc).join(" · ")}</div>`:""}
       ${facts?`<div class="facts">${facts}</div>`:""}
+      <div><div class="label">Curadoria</div><div class="curlinks">${m.cur.map(id=>`<a class="curlink" href="#curador/${id}" data-close><img src="${esc(CUR[id].photo)}" alt="">${esc(CUR[id].name)}</a>`).join("")}</div></div>
       <div><div class="label">Sessões</div><div class="catpills">${m.cats.map(c=>`<button class="catpill" type="button" data-c="${c}" data-close style="--dot:var(--c-${c})">${esc(CAT[c].name)}</button>`).join("")}</div></div>
       <div class="watch"><div class="label">Onde assistir no Brasil</div>${watch}</div>
       ${tags?`<div><div class="label">Tags</div><div class="chips">${tags}</div></div>`:""}
@@ -538,7 +589,7 @@ document.addEventListener("click", e=>{
     state.pop===k ? closePop() : openPop(k); return; }
   if (t.dataset.close!==undefined && t.closest("dialog")) $("dlg").close();
   if (t.classList.contains("card")) return openMovie(MOVIES[+t.dataset.i], !!e.target.closest(".play"));
-  if (t.dataset.c){ state.cat = (t.classList.contains("catpill")||state.cat!==t.dataset.c)?t.dataset.c:"all"; try{history.replaceState(null,"",state.cat==="all"?location.pathname:"#"+state.cat)}catch(_){} render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+  if (t.dataset.c){ state.cat = (t.classList.contains("catpill")||state.cat!==t.dataset.c)?t.dataset.c:"all"; writeHash(); render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
   if (t.dataset.f){
     const k=t.dataset.f, s=state.sel[k], v=t.dataset.v, single=FACETS.find(f=>f.k===k).single;
     if(t.closest("dialog")){ if(single) s.clear(); s.add(v); }
@@ -550,6 +601,24 @@ document.addEventListener("click", e=>{
 });
 $("dlg").addEventListener("click", e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
 $("dlg").addEventListener("close", ()=>{ stripsApply(); const v=$("vid"); if(v){ if(EMBED) v.remove(); else { v.pause(); v.removeAttribute("src"); v.load(); } } });
+// ---- Página do curador: retrato, nome, números e bio; o catálogo abaixo fica restrito aos filmes dele ----
+function renderCurator(){
+  const c=CUR[state.cur], el=$("curator");
+  el.hidden=!c; document.title = c ? `${c.name} · Cinemateca Estranha` : "Cinemateca Estranha";
+  if(!c || el.dataset.id===c.id) return;
+  el.dataset.id=c.id;
+  const l=MOVIES.filter(m=>m.cur.includes(c.id)), ys=l.map(m=>m.year).filter(Boolean);
+  const nc=new Set(l.flatMap(m=>m.countries)).size, ns=new Set(l.flatMap(m=>m.cats)).size;
+  el.innerHTML = `<div class="wrap">
+    <figure class="cur-photo"><img src="${esc(c.photo)}" alt="Retrato de ${esc(c.name)}"><figcaption>${esc(c.name)} · ${esc(c.role)}</figcaption></figure>
+    <div><a class="cur-back" href="#">← Todo o catálogo</a>
+      <div class="cur-kick">${esc(c.role)} da Cinemateca Estranha</div>
+      <h1 id="curName">${esc(c.name)}</h1>
+      <div class="cur-facts"><span><b>${l.length}</b> ${l.length===1?"filme":"filmes"}</span><span><b>${nc}</b> ${nc===1?"país":"países"}</span><span><b>${ns}</b> ${ns===1?"sessão":"sessões"}</span>${ys.length?`<span>de <b>${Math.min(...ys)}</b> a <b>${Math.max(...ys)}</b></span>`:""}</div>
+      <div class="cur-bio">${c.bio.map(p=>`<p>${esc(p)}</p>`).join("")}</div>
+    </div></div>`;
+}
+addEventListener("hashchange", ()=>{ parseHash(); $("q").value=state.q; writeHash(); render(); window.scrollTo({top:0}); });
 // ---- Hero: destaques com trailer mudo ao fundo ----
 const FEATURED = ["tt0076162","tt0082933","tt0071615","tt1441395","tt0074486","tt0076786","tt3908142","tt7984734","tt1191111","tt0013257","tt0083931","tt0067866","tt5278832","tt0079944"];
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -568,7 +637,8 @@ function heroPick(){
   return l.slice(0,6);
 }
 function renderHero(){
-  const filtering = state.q || FACETS.some(f=>state.sel[f.k].size);
+  // a página do curador tem seu próprio cabeçalho no lugar da hero
+  const filtering = state.q || FACETS.some(f=>state.sel[f.k].size) || state.cur;
   $("hero").hidden = !!filtering;
   if(filtering){ hero.key=null; $("heroBg").innerHTML=""; return; }
   stickSoon();
@@ -733,7 +803,7 @@ $("random").onclick=()=>{ const l=MOVIES.filter(m=>matches(m)); const pool=l.len
 $("popq").addEventListener("input", renderOpts);
 $("popClear").onclick=()=>{ state.sel[state.pop].clear(); render(); };
 document.addEventListener("keydown", e=>{ if(e.key==="/" && document.activeElement!==$("q") && !$("dlg").open){ e.preventDefault(); $("q").focus(); } });
-$("tagline").textContent = `${MOVIES.length} filmes de culto · ${new Set(MOVIES.flatMap(m=>m.countries)).size} países · 5 sessões`;
+$("tagline").innerHTML = `${MOVIES.length} filmes de culto · ${new Set(MOVIES.flatMap(m=>m.countries)).size} países · curadoria de ${CURATORS.map(c=>`<a href="#curador/${c.id}">${esc(c.name)}</a>`).join(" e ")}`;
 
 render();
 fetch("posters.json").then(r=>r.ok?r.json():{}).then(p=>{ POSTERS=p; render(); }).catch(()=>{});

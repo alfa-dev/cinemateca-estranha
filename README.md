@@ -18,6 +18,8 @@ Tem capas, trailers que tocam dentro da página, categorias, filtros (gênero, d
 | `site/template.html` | código-fonte da página (`__DATA__` recebe os dados) |
 | `site/cinemateca.html` | página final |
 | `site/posters.json` | capas em base64, carregadas pela página |
+| `curators.json` | curadores: nome, foto, bio e (opcional) a lista `films` de ids de filmes |
+| `site/curadores/` | retratos dos curadores |
 
 ## Pipeline
 
@@ -33,6 +35,10 @@ python3 scripts/jw.py .            # JustWatch Brasil: onde assistir → jw.json
 python3 scripts/trailers.py .      # yt-dlp + ffmpeg → trailers/<id>.mp4 (precisa de requirements.txt e ffmpeg)
 python3 scripts/finalize.py .      # monta site/cinemateca.html
 ```
+
+## Curadores
+
+Cada curador tem uma página em `#curador/<id>`, com retrato, bio e só os filmes dele. Para adicionar um, inclua uma entrada em `curators.json` com `films` (ids do IMDb, como em `movies.final.json`), ponha a foto em `site/curadores/` e rode `finalize.py`. Filmes que não estão em nenhuma lista ficam com o curador marcado `"default": true` (hoje, Gisele Britto, com todos os 248).
 
 ## Trailers
 

@@ -23,7 +23,9 @@
     "screen": {
       "film": "tt0076162",
       "video": "curadores/gisele-britto-tela.mp4",
-      "poster": "curadores/gisele-britto-tela.webp"
+      "poster": "curadores/gisele-britto-tela.webp",
+      "videoMobile": "curadores/gisele-britto-tela-mobile.mp4",
+      "posterMobile": "curadores/gisele-britto-tela-mobile.webp"
     }
   }
 ]

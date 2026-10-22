@@ -13,7 +13,8 @@ O código fica em `site/template.html`: CSS em `/* Página do curador */` e JS e
   "role": "Curadora",
   "color": "#a77bff",
   "photo": {"base": "curadores/gisele-britto", "widths": [96, 480, 800, 1200]},
-  "screen": {"film": "tt0076162", "video": "curadores/gisele-britto-tela.mp4", "poster": "curadores/gisele-britto-tela.webp"},
+  "screen": {"film": "tt0076162", "video": "curadores/gisele-britto-tela.mp4", "poster": "curadores/gisele-britto-tela.webp",
+             "videoMobile": "curadores/gisele-britto-tela-mobile.mp4", "posterMobile": "curadores/gisele-britto-tela-mobile.webp"},
   "default": true,
   "bio": ["parágrafo 1", "parágrafo 2", "…"],
   "films": ["tt…"]
@@ -68,8 +69,10 @@ Depois de editar, rode `python3 scripts/finalize.py .`.
 
 ## Tela atrás do retrato
 
-- **Tela:** um retângulo de cantos arredondados que ocupa a altura e a largura toda do retrato, atrás da figura.
+- **Tela, no desktop:** a coluna do retrato vai de cima a baixo da seção, e a tela ocupa essa coluna inteira. A figura fica presa na base da janela (`position: sticky`) enquanto o texto rola, com o trecho passando atrás.
+- **Tela, no celular (≤760px):** fica no topo, de borda a borda, com a figura encostada embaixo.
 - **Vídeo:** passa um trecho curto de um filme da curadoria (Gisele: *Hausu*, 1977). É mudo, em loop e começa sozinho.
+- **Dois cortes, um para cada formato de tela:** o vídeo é recortado no formato certo, em vez de ser esticado. `video`/`poster` são o corte alto do desktop; `videoMobile`/`posterMobile`, o corte 4:5 do celular. A página escolhe pela largura ao abrir o perfil.
 - **Camadas por cima do vídeo:**
   - uma base escurecida embaixo, para o corpo da figura não se perder num quadro claro;
   - granulação de película (ruído SVG em `overlay`).
@@ -83,12 +86,14 @@ O preto e branco e o desfoque são aplicados **no próprio arquivo**, não com C
 1. Baixe o trailer de origem (o id do YouTube está em `trailers.yt`) com `yt-dlp`.
 2. Escolha de 6 a 8 planos curtos, de 0,7 a 1,4s cada. Evite cartelas de texto, logos do título e quadros que vazam de outros planos. Para conferir cortes rápidos, gere quadros com `ffmpeg -ss <tempo>` a cada 0,5s.
 3. Monte com `ffmpeg`:
-   - recorte vertical 2:3 do centro, em 360×540, a 24fps;
+   - desktop: recorte 1:3 do centro do quadro 4:3 (`crop=240:720:520:0`), em 240×720;
+   - celular: recorte 4:5 (`crop=576:720:352:0`), em 432×540;
+   - os dois a 24fps;
    - `gblur=sigma=6`, `hue=s=0` e `eq=contrast=1.15`;
    - sem áudio, H.264 com CRF 30 e `+faststart`.
-   - Resultado: cerca de 6s e cerca de 110 KB.
+   - Resultado: cerca de 6s e de 100 a 130 KB cada.
 4. Tire um quadro de pôster em WebP (cerca de 2 KB) com `ffmpeg -ss 0.3 … -frames:v 1` e `cwebp -q 70`.
-5. Salve como `site/curadores/<id>-tela.mp4` e `<id>-tela.webp` e preencha `screen` no `curators.json`.
+5. Salve como `site/curadores/<id>-tela.mp4`/`.webp` e `<id>-tela-mobile.mp4`/`.webp` e preencha `screen` no `curators.json`.
 
 ## Navegação
 

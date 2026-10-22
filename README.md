@@ -38,7 +38,7 @@ python3 scripts/finalize.py .      # monta site/cinemateca.html
 
 ## Curadores
 
-Cada curador tem uma página em `#curador/<id>`, com retrato, bio e só os filmes dele. Para adicionar um, inclua uma entrada em `curators.json` com `films` (ids do IMDb, como em `movies.final.json`), ponha a foto em `site/curadores/` e rode `finalize.py`. Filmes que não estão em nenhuma lista ficam com o curador marcado `"default": true` (hoje, Gisele Britto, com todos os 248).
+Cada curador tem uma página em `#curador/<id>`, com retrato, números e bio, e um botão que leva ao catálogo filtrado pela curadoria dele. Para adicionar um, inclua uma entrada em `curators.json` com `films` (ids do IMDb, como em `movies.final.json`), ponha a foto em `site/curadores/` e rode `finalize.py`. Um filme pode ter vários curadores: basta estar no `films` de cada um. Filmes que não estão em nenhuma lista ficam com o curador marcado `"default": true` (hoje, Gisele Britto, com todos os 248); para um filme ser dela e de outro curador, liste-o também no `films` dela.
 
 ## Trailers
 

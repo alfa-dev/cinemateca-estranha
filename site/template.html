@@ -298,6 +298,7 @@ body{overflow-x:clip}
 .cur-facts b{color:var(--fg);font-weight:500}
 .cur-bio{display:grid;gap:12px;margin-top:24px;max-width:62ch;font-size:16px;line-height:1.65}
 .cur-bio p{margin:0}
+.cur-actions{margin-top:28px}
 .cur-bio p:first-child::first-letter{float:left;font:900 68px/.8 var(--display);color:var(--accent);margin:6px 10px 0 0}
 @media (max-width:760px){
   .curator .wrap{grid-template-columns:minmax(0,1fr);padding-block:28px 36px}
@@ -347,7 +348,7 @@ body{overflow-x:clip}
 
 <section class="curator" id="curator" aria-labelledby="curName" hidden></section>
 
-<div class="wrap">
+<div class="wrap" id="controls">
   <nav class="cats" id="cats" aria-label="Sessões"></nav>
   <div class="fwrap" id="fwrap">
     <div class="filterbar" id="filters" role="toolbar" aria-label="Filtros"></div>
@@ -399,7 +400,7 @@ MOVIES.forEach((m,i)=>{
   m.stream=stream;
   const w=[...stream,...m.flags]; if((m.watch||[]).some(o=>o.t==="Aluguel"||o.t==="Compra")) w.push("Aluguel ou compra");
   m.directors=m.directors||[]; m.studios=m.studios||[];
-  m.tags={g:m.genres, r:m.directors, p:m.studios, c:m.countries, d:m.year?[decade(m.year)]:[], w, k:[m.kind||"Longa"]};
+  m.tags={g:m.genres, r:m.directors, p:m.studios, c:m.countries, d:m.year?[decade(m.year)]:[], w, k:[m.kind||"Longa"], u:m.cur.map(c=>CUR[c].name)};
   m.hay=norm([m.title,...m.aka,m.year,...m.genres,...m.countries,m.cast,...m.directors,...m.studios,...m.stream,...m.flags,...m.cats.map(c=>CAT[c].name),...m.cur.map(c=>CUR[c].name),m.kind].join(" "));
 });
 
@@ -410,9 +411,11 @@ const FACETS = [
   {k:"c", name:"País", top:12},
   {k:"d", name:"Década", top:99, sort:"key", single:true},
   {k:"w", name:"Onde ver", top:99},
-  {k:"k", name:"Formato", top:99, single:true}
+  {k:"k", name:"Formato", top:99, single:true},
+  // curadoria: sem botão na barra; entra pelo botão da página do curador e aparece como filtro ativo
+  {k:"u", name:"Curadoria", hidden:true}
 ];
-const state = {cat:"all", cur:null, q:"", sel:{g:new Set(),r:new Set(),p:new Set(),c:new Set(),d:new Set(),w:new Set(),k:new Set()}, sort:"default", open:{}, pop:null};
+const state = {cat:"all", cur:null, q:"", sel:{g:new Set(),r:new Set(),p:new Set(),c:new Set(),d:new Set(),w:new Set(),k:new Set(),u:new Set()}, sort:"default", open:{}, pop:null};
 try{ const s=JSON.parse(localStorage.getItem("cine-sort")); if(s) state.sort=s; }catch(e){}
 // rotas: #<sessão>, #curador/<id> e #curador/<id>/<sessão>
 function parseHash(){
@@ -429,7 +432,6 @@ parseHash();
 const $ = id => document.getElementById(id);
 
 function matches(m, skip){
-  if (state.cur && !m.cur.includes(state.cur)) return false;
   if (state.cat!=="all" && !m.cats.includes(state.cat)) return false;
   if (state.q){ const words=norm(state.q).split(/\s+/).filter(Boolean); if(!words.every(w=>m.hay.includes(w))) return false; }
   for (const f of FACETS){ if (f.k===skip) continue; for (const v of state.sel[f.k]) if(!m.tags[f.k].includes(v)) return false; }
@@ -458,9 +460,8 @@ function cardHTML(m){
 }
 
 function renderCats(){
-  const base = MOVIES.filter(m=>!state.cur || m.cur.includes(state.cur));
-  const counts = {all:base.length}; CATS.forEach(c=>counts[c.id]=base.filter(m=>m.cats.includes(c.id)).length);
-  $("cats").innerHTML = [{id:"all",name:"Todas as sessões"},...CATS].filter(c=>counts[c.id]||state.cat===c.id).map(c=>
+  const counts = {all:MOVIES.length}; CATS.forEach(c=>counts[c.id]=MOVIES.filter(m=>m.cats.includes(c.id)).length);
+  $("cats").innerHTML = [{id:"all",name:"Todas as sessões"},...CATS].map(c=>
     `<button class="cat" type="button" data-c="${c.id}" aria-pressed="${state.cat===c.id}" style="--dot:${c.id==="all"?"var(--accent)":`var(--c-${c.id})`}"><b>${esc(c.name)}</b><i>${counts[c.id]}</i></button>`).join("");
 }
 function facetEntries(f){
@@ -471,7 +472,7 @@ function facetEntries(f){
 }
 const caret = `<svg viewBox="0 0 12 12"><path d="m2.5 4.5 3.5 3.5 3.5-3.5"/></svg>`;
 function renderFilters(){
-  $("filters").innerHTML = FACETS.map(f=>{
+  $("filters").innerHTML = FACETS.filter(f=>!f.hidden).map(f=>{
     const sel=[...state.sel[f.k]], n=sel.length;
     const label = f.single && n ? sel[0] : f.name;
     return `<button class="fbtn ${n?"on":""}" type="button" data-facet="${f.k}" aria-haspopup="dialog" aria-controls="pop" aria-expanded="${state.pop===f.k}">${esc(label)}${!f.single&&n?`<b>${n}</b>`:""}${caret}</button>`;
@@ -522,17 +523,20 @@ $("pop").addEventListener("beforetoggle", e=>{
 });
 addEventListener("resize", positionPop); addEventListener("scroll", positionPop, {passive:true});
 function render(){
-  renderCats(); renderFilters(); renderOpts(); renderCurator(); renderHero();
+  renderCurator(); renderHero();
+  $("controls").hidden = $("main").hidden = !!state.cur;
+  if(state.cur) return;
+  renderCats(); renderFilters(); renderOpts();
   const list = sorted(MOVIES.filter(m=>matches(m)));
   const active = state.q || FACETS.some(f=>state.sel[f.k].size);
   $("reset").hidden = !active;
   $("clear").hidden = !state.q;
-  $("count").innerHTML = `<b>${list.length}</b> ${list.length===1?"filme":"filmes"}${state.cat!=="all"?` em ${esc(CAT[state.cat].name)}`:""}${state.cur?` · curadoria de ${esc(CUR[state.cur].name)}`:""}`;
+  $("count").innerHTML = `<b>${list.length}</b> ${list.length===1?"filme":"filmes"}${state.cat!=="all"?` em ${esc(CAT[state.cat].name)}`:""}`;
   document.querySelectorAll("#sort button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s===state.sort));
   const main=$("main");
   if(!list.length){ main.innerHTML=`<div class="empty"><b>Nada na tela</b>Nenhum filme combina com a busca e as tags escolhidas. Tente remover uma tag.</div>`; return; }
   const groups = state.cat==="all" ? CATS.map(c=>({c, items:list.filter(m=>m.cats.includes(c.id))})).filter(g=>g.items.length) : [{c:CAT[state.cat], items:list}];
-  const banded = state.cat==="all" && !active && !state.cur;
+  const banded = state.cat==="all" && !active;
   main.innerHTML = groups.map(({c,items})=>`<section class="section" style="--dot:var(--c-${c.id})">
       ${banded?bandHTML(c):""}<div class="section-head"><h2>${esc(c.name)}</h2><span class="n">${items.length}</span><p>${esc(c.desc)}</p></div>
       <div class="grid">${items.map(cardHTML).join("")}</div></section>`).join("");
@@ -613,9 +617,17 @@ function renderCurator(){
       <div class="cur-kick">${esc(c.role)} da Cinemateca Estranha</div>
       <h1 id="curName">${esc(c.name)}</h1>
       <div class="cur-facts"><span><b>${l.length}</b> ${l.length===1?"filme":"filmes"}</span><span><b>${nc}</b> ${nc===1?"país":"países"}</span><span><b>${ns}</b> ${ns===1?"sessão":"sessões"}</span>${ys.length?`<span>de <b>${Math.min(...ys)}</b> a <b>${Math.max(...ys)}</b></span>`:""}</div>
+      <div class="cur-actions"><button class="btn primary" type="button" data-curfilter="${esc(c.id)}">Ver ${l.length===1?"o filme":`os ${l.length} filmes`} da curadoria</button></div>
       <div class="cur-bio">${c.bio.map(p=>`<p>${esc(p)}</p>`).join("")}</div>
     </div></div>`;
 }
+$("curator").addEventListener("click", e=>{
+  const b=e.target.closest("[data-curfilter]"); if(!b) return;
+  state.cur=null; state.cat="all"; state.q=""; $("q").value=""; FACETS.forEach(f=>state.sel[f.k].clear());
+  state.sel.u.add(CUR[b.dataset.curfilter].name);
+  try{ history.pushState(null,"",location.pathname+location.search); }catch(_){}
+  render(); window.scrollTo({top:0});
+});
 addEventListener("hashchange", ()=>{ parseHash(); $("q").value=state.q; writeHash(); render(); window.scrollTo({top:0}); });
 // ---- Hero: destaques com trailer mudo ao fundo ----
 const FEATURED = ["tt0076162","tt0082933","tt0071615","tt1441395","tt0074486","tt0076786","tt3908142","tt7984734","tt1191111","tt0013257","tt0083931","tt0067866","tt5278832","tt0079944"];
@@ -794,7 +806,7 @@ let stickRaf=0; const stickSoon=()=>{ cancelAnimationFrame(stickRaf); stickRaf=r
 addEventListener("scroll", stickSoon, {passive:true}); addEventListener("resize", stickSoon);
 new ResizeObserver(stickSoon).observe($("hero"));
 document.addEventListener("visibilitychange", stripsApply);
-let qt; $("q").addEventListener("input", e=>{ clearTimeout(qt); qt=setTimeout(()=>{state.q=e.target.value.trim(); render();},90); });
+let qt; $("q").addEventListener("input", e=>{ clearTimeout(qt); qt=setTimeout(()=>{state.q=e.target.value.trim(); if(state.cur){ state.cur=null; writeHash(); } render();},90); });
 $("clear").onclick=()=>{ $("q").value=""; state.q=""; render(); $("q").focus(); };
 $("reset").onclick=()=>{ $("q").value=""; state.q=""; FACETS.forEach(f=>state.sel[f.k].clear()); render(); };
 $("random").onclick=()=>{ const l=MOVIES.filter(m=>matches(m)); const pool=l.length?l:MOVIES; openMovie(pool[Math.floor(Math.random()*pool.length)]); };

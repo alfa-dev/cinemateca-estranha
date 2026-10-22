@@ -281,6 +281,12 @@ body{overflow-x:clip}
 .sband{--band:128px;position:sticky;top:var(--hdr,0px);z-index:4;height:var(--band);margin:0 calc(50% - 50vw) 20px;overflow:hidden;isolation:isolate;background:var(--bg);border-bottom:1px solid var(--line)}
 .sband::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(to right,color-mix(in srgb,var(--bg) 82%,transparent) 0%,color-mix(in srgb,var(--bg) 35%,transparent) 55%,color-mix(in srgb,var(--bg) 15%,transparent))}
 .sband .hero-mini{opacity:1;visibility:visible}
+/* o espaço entre sessões fica dentro da sessão de cima (sticky não entra no padding do pai):
+   a faixa que sai e a que entra se encostam, sem vão no meio */
+.section:has(> .sband){padding-top:0}
+.sband{margin-bottom:0}
+.sband + .section-head{padding-top:20px}
+.section:has(> .sband) .grid{padding-bottom:28px}
 .hero-mini .t small span{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--d);margin-right:8px;vertical-align:1px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 /* Página do curador: retrato impresso em papel, nome e bio; tela sempre escura, como a hero */

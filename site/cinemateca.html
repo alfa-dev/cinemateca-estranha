@@ -368,9 +368,7 @@ body{overflow-x:clip}
 .ses-kick{margin-top:20px;font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dot)}
 .session h1{font:900 clamp(52px,9vw,120px)/.84 var(--display);text-transform:uppercase;margin:10px 0 0;text-wrap:balance;overflow-wrap:anywhere}
 .session h1::first-letter{color:var(--dot)}
-.ses-desc{margin:16px 0 0;max-width:56ch;font-size:17px;line-height:1.55;color:var(--fg)}
-.ses-row{margin-top:18px}
-.ses-row .chips{flex:none}
+.session .cur-facts{margin-top:18px}
 .ses-fan{position:relative;height:clamp(240px,30vw,360px)}
 .ses-fan img{position:absolute;left:50%;top:50%;width:46%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;box-shadow:var(--shadow);
   translate:calc(-50% + var(--k) * 38%) -50%;rotate:calc(var(--k) * 7deg);transform-origin:50% 120%;z-index:calc(10 - var(--k) * var(--k))}
@@ -617,7 +615,7 @@ function render(){
   if(!list.length){ main.innerHTML=`<div class="empty"><b>Nada na tela</b>Nenhum filme combina com a busca e as tags escolhidas. Tente remover uma tag.</div>`; return; }
   const groups = state.cat==="all" ? CATS.map(c=>({c, items:list.filter(m=>m.cats.includes(c.id))})).filter(g=>g.items.length) : [{c:CAT[state.cat], items:list}];
   main.innerHTML = groups.map(({c,items})=>`<section class="section" style="--dot:var(--c-${c.id})">
-      <div class="section-head"${state.cat!=="all"&&!$("session").hidden?" hidden":""}><h2>${esc(c.name)}</h2><span class="n">${items.length}</span></div><p class="section-desc">${esc(c.desc)}</p>
+      <div class="section-head"${state.cat!=="all"&&!$("session").hidden?" hidden":""}><h2>${esc(c.name)}</h2><span class="n">${items.length}</span></div>${state.cat!=="all"&&!$("session").hidden?"":`<p class="section-desc">${esc(c.desc)}</p>`}
       <div class="grid">${items.map(cardHTML).join("")}</div></section>`).join("");
   stickSoon();
 }
@@ -681,7 +679,7 @@ document.addEventListener("click", e=>{
 });
 $("dlg").addEventListener("click", e=>{ if(e.target===e.currentTarget) e.currentTarget.close(); });
 $("dlg").addEventListener("close", ()=>{ stripsApply(); const v=$("vid"); if(v){ if(EMBED) v.remove(); else { v.pause(); v.removeAttribute("src"); v.load(); } } });
-// ---- Página da sessão: cabeçalho com nome, descrição, números, diretores e países mais frequentes e um leque de cartazes;
+// ---- Página da sessão: cabeçalho com nome, números e um leque de cartazes;
 // a grade abaixo é a de sempre, só com os filmes da sessão ----
 function renderSession(){
   const c=state.cur ? null : CAT[state.cat], el=$("session");
@@ -689,19 +687,14 @@ function renderSession(){
   if(!state.cur) document.title = `${c.name} · Cinemateca Estranha`;
   const key=c.id+"|"+Object.keys(POSTERS).length; if(el.dataset.key===key) return; el.dataset.key=key;
   const l=MOVIES.filter(m=>m.cats.includes(c.id)), ys=l.map(m=>m.year).filter(Boolean);
-  const top=(f,n)=>{ const cnt=new Map(); l.forEach(m=>f(m).forEach(v=>cnt.set(v,(cnt.get(v)||0)+1))); return [...cnt].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"pt")).slice(0,n); };
-  const dirs=top(m=>m.directors,6), countries=top(m=>m.countries,6), nc=new Set(l.flatMap(m=>m.countries)).size, nd=new Set(l.flatMap(m=>m.directors)).size;
-  const chips=(k,list)=>list.map(([v,n])=>`<button class="chip" type="button" data-f="${k}" data-v="${esc(v)}">${esc(v)} <i>${n}</i></button>`).join("");
+  const nc=new Set(l.flatMap(m=>m.countries)).size, nd=new Set(l.flatMap(m=>m.directors)).size;
   const fan=[...l.filter(m=>FEATURED.includes(m.id)&&POSTERS[m.id]), ...l.filter(m=>POSTERS[m.id])].filter((m,k,a)=>a.indexOf(m)===k).slice(0,5);
   el.style.setProperty("--dot",`var(--c-${c.id})`);
   el.innerHTML = `<div class="wrap">
     <div class="ses-text"><a class="cur-back" href="#">← Todas as sessões</a>
       <div class="ses-kick">Sessão da Cinemateca Estranha</div>
       <h1 id="sesName">${esc(c.name)}</h1>
-      <p class="ses-desc">${esc(c.desc)}</p>
       <div class="cur-facts"><span><b>${l.length}</b> ${l.length===1?"filme":"filmes"}</span><span><b>${nc}</b> ${nc===1?"país":"países"}</span><span><b>${nd}</b> diretores</span>${ys.length?`<span>de <b>${Math.min(...ys)}</b> a <b>${Math.max(...ys)}</b></span>`:""}</div>
-      ${dirs.length?`<div class="ses-row"><div class="label">Diretores mais presentes</div><div class="chips">${chips("r",dirs)}</div></div>`:""}
-      <div class="ses-row"><div class="label">Países</div><div class="chips">${chips("c",countries)}</div></div>
     </div>
     <div class="ses-fan" aria-hidden="true">${fan.map((m,k)=>`<img src="${POSTERS[m.id]}" alt="" style="--k:${k-(fan.length-1)/2}">`).join("")}</div>
   </div>`;

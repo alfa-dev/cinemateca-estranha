@@ -28,7 +28,7 @@ O código fica em `site/template.html`: CSS em `/* Página do curador */` e JS e
 | `color` | cor do curador na página dele (Gisele: roxo). Sem ela, usa o laranja do site |
 | `photo` | retrato em WebP, em várias larguras (`<base>-<largura>.webp`) |
 | `screen` | trecho de filme que passa na tela atrás do retrato (opcional) |
-| `bio` | um item por parágrafo |
+| `bio` | um item por parágrafo; `**trecho**` vira destaque em negrito |
 | `films` | ids do IMDb dos filmes do curador |
 | `default` | quem fica com os filmes que não estão no `films` de ninguém (só um curador) |
 
@@ -47,7 +47,9 @@ Depois de editar, rode `python3 scripts/finalize.py .`.
   - o nome, enorme, em Big Shoulders, com a última palavra na cor do curador (como "Cinemateca **Estranha**" na marca);
   - os números, calculados dos filmes: filmes, países, sessões, do ano mais antigo ao mais novo;
   - o botão "Ver os N filmes da curadoria";
-  - a bio, com capitular na cor do curador.
+  - a bio:
+    - a capitular de letreiro tem quatro linhas de altura e vai na cor do curador, com duas cópias deslocadas em contorno, como impressão fora de registro;
+    - os trechos marcados com `**…**` aparecem em negrito branco, com um grifo na cor do curador.
 - Na página do curador ficam escondidos a hero, as sessões, os filtros e a grade. A aba do navegador mostra "<nome> · Cinemateca Estranha".
 
 ## Retrato

@@ -313,7 +313,11 @@ body{overflow-x:clip}
 .cur-bio{display:grid;gap:12px;margin-top:24px;max-width:62ch;font-size:16px;line-height:1.65}
 .cur-bio p{margin:0}
 .cur-actions{margin-top:28px}
-.cur-bio p:first-child::first-letter{float:left;font:900 68px/.8 var(--display);color:var(--cur);margin:6px 10px 0 0}
+/* trechos em destaque: **assim** na bio do curators.json */
+.cur-bio strong{font-weight:600;color:#fff;background:linear-gradient(transparent 62%,color-mix(in srgb,var(--cur) 32%,transparent) 62%)}
+/* capitular de letreiro: quatro linhas de altura, cor do curador com uma cópia deslocada em contorno, como impressão fora de registro */
+.cur-bio p:first-child::first-letter{float:left;font:900 152px/.74 var(--display);color:var(--cur);margin:10px 18px 0 -2px;padding:0 4px;
+  text-shadow:4px 4px 0 var(--bg),6px 6px 0 color-mix(in srgb,var(--cur) 55%,transparent),10px 10px 0 var(--bg),12px 12px 0 color-mix(in srgb,var(--cur) 25%,transparent)}
 @media (max-width:760px){
   .curator .wrap{grid-template-columns:minmax(0,1fr);padding-block:28px 36px}
   .cur-photo{width:min(100%,380px);justify-self:center}
@@ -642,7 +646,7 @@ function renderCurator(){
       <h1 id="curName">${esc(words.slice(0,-1).join(" "))} <span>${esc(words.at(-1))}</span></h1>
       <div class="cur-facts"><span><b>${l.length}</b> ${l.length===1?"filme":"filmes"}</span><span><b>${nc}</b> ${nc===1?"país":"países"}</span><span><b>${ns}</b> ${ns===1?"sessão":"sessões"}</span>${ys.length?`<span>de <b>${Math.min(...ys)}</b> a <b>${Math.max(...ys)}</b></span>`:""}</div>
       <div class="cur-actions"><button class="btn primary" type="button" data-curfilter="${esc(c.id)}">Ver ${l.length===1?"o filme":`os ${l.length} filmes`} da curadoria</button></div>
-      <div class="cur-bio">${c.bio.map(p=>`<p>${esc(p)}</p>`).join("")}</div>
+      <div class="cur-bio">${c.bio.map(p=>`<p>${esc(p).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")}</p>`).join("")}</div>
     </div></div>`;
 }
 $("curator").addEventListener("click", e=>{

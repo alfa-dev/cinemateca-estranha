@@ -104,11 +104,11 @@ open(S+'/index.html','w').write('<!doctype html>\n<html lang="pt-BR">\n<meta cha
   +'\n<meta http-equiv="refresh" content="0; url=site/cinemateca.html">\n<a href="site/cinemateca.html">Cinemateca Estranha</a>\n')
 os.makedirs(S+'/site/curador',exist_ok=True)
 for c in CUR:
-  l=[m for m in M if c['id'] in m['cur']]; first=re.split(r'(?<=[.!?])\s',c['bio'][0])[0]
+  l=[m for m in M if c['id'] in m['cur']]; bio=[x.replace('**','') for x in c['bio']]; first=re.split(r'(?<=[.!?])\s',bio[0])[0]
   desc=f"{c['role']} da Cinemateca Estranha: {len(l)} filmes de {len({x for m in l for x in m['countries']})} países. {first}"
   url=BASE+'curador/'+c['id']+'.html'; dest='../cinemateca.html#curador/'+c['id']
   mt=meta(f"{c['name']} · {c['role']} da Cinemateca Estranha",desc,url,BASE+'share/'+c['id']+'.jpg',f"Retrato de {c['name']}",'profile','../')
-  mt+='\n<script type="application/ld+json">'+js({'@context':'https://schema.org','@type':'ProfilePage','url':url,'mainEntity':{'@type':'Person','name':c['name'],'jobTitle':c['role'],'description':' '.join(c['bio']),'image':BASE+c['photo']['base']+'-800.webp'}})+'</script>'
+  mt+='\n<script type="application/ld+json">'+js({'@context':'https://schema.org','@type':'ProfilePage','url':url,'mainEntity':{'@type':'Person','name':c['name'],'jobTitle':c['role'],'description':' '.join(bio),'image':BASE+c['photo']['base']+'-800.webp'}})+'</script>'
   open(S+'/site/curador/%s.html'%c['id'],'w').write(f'''<!doctype html>
 <html lang="pt-BR">
 <meta charset="utf-8">

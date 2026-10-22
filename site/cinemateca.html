@@ -416,21 +416,32 @@ const FACETS = [
   {k:"d", name:"Década", top:99, sort:"key", single:true},
   {k:"w", name:"Onde ver", top:99},
   {k:"k", name:"Formato", top:99, single:true},
-  // curadoria: sem botão na barra; entra pelo botão da página do curador e aparece como filtro ativo
-  {k:"u", name:"Curadoria", hidden:true}
+  {k:"u", name:"Curadoria", top:99}
 ];
 const state = {cat:"all", cur:null, q:"", sel:{g:new Set(),r:new Set(),p:new Set(),c:new Set(),d:new Set(),w:new Set(),k:new Set(),u:new Set()}, sort:"default", open:{}, pop:null};
 try{ const s=JSON.parse(localStorage.getItem("cine-sort")); if(s) state.sort=s; }catch(e){}
-// rotas: #<sessão>, #curador/<id> e #curador/<id>/<sessão>
+// rotas: #<sessão>, #curador/<id> e #curador/<id>/<sessão>; no catálogo, busca e filtros vão junto: #<sessão>?q=…&g=Terror&u=Gisele+Britto
 function parseHash(){
-  const p=decodeURIComponent(location.hash.slice(1)).split("/"), cur=p[0]==="curador"&&CUR[p[1]]?p[1]:null, c=cur?p[2]:p[0];
-  if(cur!==state.cur){ state.q=""; FACETS.forEach(f=>state.sel[f.k].clear()); }
+  const [route, qs=""] = location.hash.slice(1).split("?");
+  const p=decodeURIComponent(route).split("/"), cur=p[0]==="curador"&&CUR[p[1]]?p[1]:null, c=cur?p[2]:p[0];
   state.cur=cur; state.cat=CAT[c]?c:"all";
+  if(cur) return;  // a página do curador não mexe nos filtros do catálogo
+  const sp=new URLSearchParams(qs);
+  state.q=sp.get("q")||""; FACETS.forEach(f=>{ state.sel[f.k]=new Set(sp.getAll(f.k)); });
 }
+// o estado do catálogo fica na URL (recarregar e compartilhar mantêm os filtros) e no localStorage (volta ao abrir o site sem hash)
 function writeHash(){
-  const h=[...(state.cur?["curador",state.cur]:[]), ...(state.cat!=="all"?[state.cat]:[])].join("/");
+  let h=[...(state.cur?["curador",state.cur]:[]), ...(state.cat!=="all"?[state.cat]:[])].join("/");
+  if(!state.cur){
+    const sp=new URLSearchParams(); if(state.q) sp.set("q",state.q);
+    FACETS.forEach(f=>state.sel[f.k].forEach(v=>sp.append(f.k,v)));
+    if(sp.size) h+="?"+sp;
+    try{ localStorage.setItem("cine-estado",h); }catch(_){}
+  }
+  if(location.hash.slice(1)===h || (!h && !location.hash)) return;
   try{ history.replaceState(null,"",h?"#"+h:location.pathname+location.search); }catch(_){}
 }
+if(!location.hash){ try{ const h=localStorage.getItem("cine-estado"); if(h) history.replaceState(null,"","#"+h); }catch(_){} }
 parseHash();
 
 const $ = id => document.getElementById(id);
@@ -476,7 +487,7 @@ function facetEntries(f){
 }
 const caret = `<svg viewBox="0 0 12 12"><path d="m2.5 4.5 3.5 3.5 3.5-3.5"/></svg>`;
 function renderFilters(){
-  $("filters").innerHTML = FACETS.filter(f=>!f.hidden).map(f=>{
+  $("filters").innerHTML = FACETS.map(f=>{
     const sel=[...state.sel[f.k]], n=sel.length;
     const label = f.single && n ? sel[0] : f.name;
     return `<button class="fbtn ${n?"on":""}" type="button" data-facet="${f.k}" aria-haspopup="dialog" aria-controls="pop" aria-expanded="${state.pop===f.k}">${esc(label)}${!f.single&&n?`<b>${n}</b>`:""}${caret}</button>`;
@@ -530,7 +541,7 @@ function render(){
   renderCurator(); renderHero();
   $("controls").hidden = $("main").hidden = !!state.cur;
   if(state.cur) return;
-  renderCats(); renderFilters(); renderOpts();
+  writeHash(); renderCats(); renderFilters(); renderOpts();
   const list = sorted(MOVIES.filter(m=>matches(m)));
   const active = state.q || FACETS.some(f=>state.sel[f.k].size);
   $("reset").hidden = !active;
@@ -817,6 +828,7 @@ $("random").onclick=()=>{ const l=MOVIES.filter(m=>matches(m)); const pool=l.len
 $("popq").addEventListener("input", renderOpts);
 $("popClear").onclick=()=>{ state.sel[state.pop].clear(); render(); };
 document.addEventListener("keydown", e=>{ if(e.key==="/" && document.activeElement!==$("q") && !$("dlg").open){ e.preventDefault(); $("q").focus(); } });
+$("q").value=state.q;
 $("tagline").textContent = `${MOVIES.length} filmes de culto · ${new Set(MOVIES.flatMap(m=>m.countries)).size} países · 5 sessões`;
 
 render();

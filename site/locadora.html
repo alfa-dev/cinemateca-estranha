@@ -285,6 +285,8 @@ async function loadModel(c, key){
 }
 // gira, escala pela largura e põe a origem no centro da base; devolve o grupo e o tamanho final
 function fit(obj, c){
+  const rm=[]; if(c.ocultar) obj.traverse(o=>{ if(c.ocultar.some(n=>o.name.startsWith(n))) rm.push(o); });
+  rm.forEach(o=>o.removeFromParent());
   obj.rotation.set(...c.rot.map(d=>d*Math.PI/180));
   obj.updateMatrixWorld(true);
   let b = new THREE.Box3().setFromObject(obj);
@@ -525,14 +527,17 @@ function fallbackCassette(){
     for(const x of [140,234]){ c.fillStyle="#d8d2c4"; c.beginPath(); c.arc(x,115,22,0,7); c.fill(); c.fillStyle="#3a2a1c"; c.beginPath(); c.arc(x,115,12,0,7); c.fill(); }
   })}));
   top.rotation.x=-Math.PI/2; top.position.y=h/2+.0005; g.add(top);
+  return {group:g, size:V3(w,h,d), label:spineLabel(g,w,h,d)};
+}
+// etiqueta colada na lombada da fita (face +z), com o título do filme
+function spineLabel(g,w,h,d){
   const spineC=document.createElement("canvas"); spineC.width=512; spineC.height=68;
   const spineT=new THREE.CanvasTexture(spineC); spineT.colorSpace=THREE.SRGBColorSpace;
-  const spine=new THREE.Mesh(new THREE.PlaneGeometry(w-.01,h-.006), new THREE.MeshStandardMaterial({map:spineT, roughness:.6}));
-  spine.position.z=d/2+.0005; g.add(spine);
-  const label=(m,cat)=>{ const c=spineC.getContext("2d"); c.fillStyle="#f1ead8"; c.fillRect(0,0,512,68); c.fillStyle=catColor(cat); c.fillRect(0,0,14,68);
+  const spine=new THREE.Mesh(new THREE.PlaneGeometry(w*.8,h*.62), new THREE.MeshStandardMaterial({map:spineT, roughness:.6}));
+  spine.position.set(0,0,d/2+.0006); g.add(spine);
+  return (m,cat)=>{ const c=spineC.getContext("2d"); c.fillStyle="#f1ead8"; c.fillRect(0,0,512,68); c.fillStyle=catColor(cat); c.fillRect(0,0,14,68);
     c.fillStyle="#1a1410"; c.font='900 40px "Big Shoulders Display"'; c.textBaseline="middle"; let t=m.title.toUpperCase();
     while(c.measureText(t).width>470 && t.length>4) t=t.slice(0,-2).trimEnd()+"…"; c.fillText(t,28,37); spineT.needsUpdate=true; };
-  return {group:g, size:V3(w,h,d), label};
 }
 
 let BENCH, VCR, TV, CAS, SCREEN, TVGLOW;
@@ -560,7 +565,7 @@ async function buildBench(cena, x){
   TV.group.position.set(x, top+VCR.size.y, VCR.group.position.z+VCR.size.z/2-.02-TV.size.z/2); scene.add(TV.group);
 
   glb = await loadModel(cena.fita, "fita");
-  if(glb){ const f=fit(glb, cena.fita); f.group.children[0].position.y-=f.size.y/2; CAS={...f, label:()=>{}}; }
+  if(glb){ const f=fit(glb, cena.fita); f.group.children[0].position.y-=f.size.y/2; CAS={...f, label:spineLabel(f.group,f.size.x,f.size.y,f.size.z)}; }
   else CAS = fallbackCassette();
   CAS.group.visible=false; scene.add(CAS.group);
 

@@ -1,7 +1,7 @@
 {
   "estante": {"arquivo": "estante.glb", "largura": 0.9, "altura": 1.5, "rot": [0, 0, 0], "prateleiras": null},
   "bancada": {"arquivo": "bancada.glb", "largura": 1.0, "rot": [0, 0, 0], "topo": null},
-  "vcr": {"arquivo": "vcr.glb", "largura": 0.43, "rot": [0, 0, 0], "boca": {"x": 0.36, "y": 0.62}, "visor": {"x": 0.74, "y": 0.55, "largura": 0.1}},
+  "vcr": {"arquivo": "vcr.glb", "largura": 0.43, "rot": [0, 0, 0], "boca": {"x": 0.5, "y": 0.72}, "visor": {"x": 0.5, "y": 0.245, "largura": 0.12}, "ocultar": ["Cord_low", "Cord_holder_low"]},
   "tv": {"arquivo": "tv.glb", "largura": 0.56, "rot": [0, 0, 0], "tela": {"x": 0.44, "y": 0.55, "largura": 0.62, "z": 0.004}},
-  "fita": {"arquivo": "fita.glb", "largura": 0.187, "rot": [0, 0, 0]}
+  "fita": {"arquivo": "fita.glb", "largura": 0.187, "rot": [-90, 0, 0]}
 }

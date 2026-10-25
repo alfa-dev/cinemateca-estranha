@@ -1,0 +1,976 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Locadora · Cinemateca Estranha</title>
+<meta name="description" content="A Cinemateca Estranha como videolocadora: 248 fitas VHS numa estante, um VCR e uma TV de tubo. Escolha a fita, ponha no VCR e veja o trailer.">
+<link rel="canonical" href="https://alfa-dev.github.io/cinemateca-estranha/site/locadora.html">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#121019">
+<meta name="color-scheme" content="dark light">
+<meta name="application-name" content="Cinemateca Estranha">
+<meta name="apple-mobile-web-app-title" content="Cinemateca">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Cinemateca Estranha">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Locadora · Cinemateca Estranha">
+<meta property="og:description" content="A Cinemateca Estranha como videolocadora: 248 fitas VHS numa estante, um VCR e uma TV de tubo. Escolha a fita, ponha no VCR e veja o trailer.">
+<meta property="og:url" content="https://alfa-dev.github.io/cinemateca-estranha/site/locadora.html">
+<meta property="og:image" content="https://alfa-dev.github.io/cinemateca-estranha/site/share/cinemateca.jpg">
+<meta property="og:image:secure_url" content="https://alfa-dev.github.io/cinemateca-estranha/site/share/cinemateca.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Cartazes de filmes de culto atrás do nome Cinemateca Estranha">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Locadora · Cinemateca Estranha">
+<meta name="twitter:description" content="A Cinemateca Estranha como videolocadora: 248 fitas VHS numa estante, um VCR e uma TV de tubo. Escolha a fita, ponha no VCR e veja o trailer.">
+<meta name="twitter:image" content="https://alfa-dev.github.io/cinemateca-estranha/site/share/cinemateca.jpg">
+<meta name="twitter:image:alt" content="Cartazes de filmes de culto atrás do nome Cinemateca Estranha">
+<meta itemprop="name" content="Locadora · Cinemateca Estranha">
+<meta itemprop="description" content="A Cinemateca Estranha como videolocadora: 248 fitas VHS numa estante, um VCR e uma TV de tubo. Escolha a fita, ponha no VCR e veja o trailer.">
+<meta itemprop="image" content="https://alfa-dev.github.io/cinemateca-estranha/site/share/cinemateca.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Instrument+Sans:wght@400;500;600&family=VT323&display=swap">
+<style>
+/* Locadora: uma sala escura com a estante de fitas à esquerda e a bancada com VCR e TV de tubo à direita.
+   A cena é WebGL; a tela da TV é um elemento CSS3D atrás do canvas, que aparece por um "furo" no lugar do vidro. */
+:root{
+  --bg:#07060a; --panel:#141019; --line:#2f2a3d; --fg:#efe9dc; --muted:#a39bb0; --accent:#f4a640; --on-accent:#1a1206;
+  --osd:#7dffb0; --vhs:#1b2fd6;
+  --c-weird:#e86bb3; --c-mundo:#3fc2b0; --c-mindfuck:#9b8cff; --c-horror:#ef5a4f; --c-thelema:#d9b54a;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --vt:"VT323",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 var(--body);overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:inherit}
+
+#stage{position:fixed;inset:0}
+#css3d,#gl{position:absolute;inset:0;width:100%;height:100%}
+#css3d{z-index:0;background:#050407}
+#gl{z-index:1;touch-action:none;cursor:grab;display:block}
+#gl.drag{cursor:grabbing}
+#gl.point{cursor:pointer}
+body.tv #gl{pointer-events:none}
+
+/* HUD */
+.hud{position:fixed;z-index:5;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px max(16px,env(safe-area-inset-left,0px));pointer-events:none}
+.hud>*{pointer-events:auto}
+.top{top:0;padding-top:max(10px,env(safe-area-inset-top,0px));background:linear-gradient(#07060ae6,#07060a00);flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;line-height:.85;margin-right:4px}
+.brand b{font:900 30px/.85 var(--display);text-transform:uppercase;letter-spacing:.01em}
+.brand b span{color:var(--accent)}
+.brand small{font:18px/1 var(--vt);color:var(--muted);letter-spacing:.06em;margin-top:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#141019d9;backdrop-filter:blur(6px);border-radius:6px;padding:4px 10px;font:20px/1.1 var(--vt);letter-spacing:.04em;text-transform:uppercase;cursor:pointer;text-decoration:none;white-space:nowrap}
+.chip:hover{border-color:var(--muted)}
+.chip.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chip[aria-pressed="true"]{border-color:var(--dot,var(--accent));box-shadow:inset 0 -3px 0 var(--dot,var(--accent))}
+.chip i{font-style:normal;width:9px;height:9px;border-radius:2px;background:var(--dot)}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1 1 auto;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+.search{position:relative;flex:0 1 260px}
+.search input{width:100%;background:#141019d9;border:1px solid var(--line);border-radius:6px;padding:5px 10px;font:20px/1.1 var(--vt);letter-spacing:.04em}
+.search input::placeholder{color:var(--muted);text-transform:uppercase}
+.results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:0 18px 40px #000a}
+.results button{display:flex;width:100%;gap:8px;align-items:baseline;text-align:left;border:0;background:none;padding:8px 10px;cursor:pointer}
+.results button:hover,.results button:focus-visible{background:#ffffff12}
+.results i{font-style:normal;width:8px;height:8px;border-radius:2px;background:var(--dot);flex:none;translate:0 -1px}
+.results b{font-weight:600}
+.results span{color:var(--muted);font-size:13px;margin-left:auto}
+@media (max-width:720px){
+  .top{gap:8px}
+  .brand b{font-size:24px}
+  .tabs{order:3;flex-basis:100%}
+  .search{flex:1 1 140px}
+}
+
+.hint{position:fixed;z-index:4;left:50%;translate:-50% 0;bottom:max(14px,env(safe-area-inset-bottom,0px));font:20px/1.2 var(--vt);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:#07060acc;padding:4px 12px;border-radius:6px;white-space:nowrap;pointer-events:none;transition:opacity .4s}
+.zoom{position:fixed;z-index:4;right:max(16px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px}
+.zoom .chip{justify-content:center;width:38px;height:38px;padding:0;font-size:26px}
+body:not(.shelf) .zoom, body:not(.shelf) .hint{opacity:0;pointer-events:none}
+@media (max-width:720px){ .hint{font-size:17px;left:16px;translate:none} }
+
+.tip{position:fixed;z-index:6;pointer-events:none;background:#07060aee;border:1px solid var(--line);border-left:4px solid var(--dot);border-radius:6px;padding:6px 10px;max-width:280px;translate:14px 14px}
+.tip b{display:block;font:700 19px/1.05 var(--display);text-transform:uppercase;letter-spacing:.01em}
+.tip span{font:18px/1.1 var(--vt);color:var(--muted)}
+
+/* Cartão da fita na mão */
+.card{position:fixed;z-index:5;right:max(16px,env(safe-area-inset-right,0px));top:50%;translate:0 -50%;width:min(360px,calc(100vw - 32px));max-height:calc(100dvh - 140px);overflow:auto;background:#120f17f2;border:1px solid var(--line);border-top:4px solid var(--dot);border-radius:10px;padding:16px 18px 18px;box-shadow:0 24px 60px #000c;animation:rise .35s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+.card .kick{font:20px/1 var(--vt);letter-spacing:.08em;text-transform:uppercase;color:var(--dot)}
+.card h2{font:900 34px/.95 var(--display);text-transform:uppercase;margin:6px 0 4px;letter-spacing:.005em}
+.card .aka{color:var(--muted);font-size:13px}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:12px 0 0;font-size:14px}
+.card dt{font:18px/1.2 var(--vt);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.card dd{margin:0}
+.card .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.card .note{font:17px/1.15 var(--vt);color:var(--muted);margin-top:12px;letter-spacing:.03em}
+@media (max-width:720px){
+  .card{top:auto;bottom:max(12px,env(safe-area-inset-bottom,0px));translate:none;left:16px;right:16px;width:auto;max-height:46dvh}
+  .card h2{font-size:28px}
+}
+
+.watchbar{position:fixed;z-index:5;left:50%;translate:-50% 0;bottom:max(14px,env(safe-area-inset-bottom,0px));display:flex;gap:8px}
+
+/* Tela de abertura */
+.loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:var(--vhs);color:#fff;font:clamp(28px,6vw,54px)/1 var(--vt);letter-spacing:.08em;text-shadow:2px 0 #ff2a6d88,-2px 0 #00e5ff88;transition:opacity .6s}
+.loading.done{opacity:0;pointer-events:none}
+.loading small{display:block;font-size:.45em;margin-top:14px;opacity:.8;text-align:center}
+.loading p{margin:0;text-align:center;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+
+dialog{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;max-width:min(560px,calc(100vw - 32px));padding:20px 22px}
+dialog::backdrop{background:#000b}
+dialog h2{font:900 30px/1 var(--display);text-transform:uppercase;margin:0 0 12px}
+dialog ul{padding-left:18px;margin:0 0 12px}
+dialog li{margin:6px 0}
+dialog p{color:var(--muted);font-size:14px}
+.nogl{position:fixed;inset:0;z-index:30;display:grid;place-items:center;text-align:center;padding:24px;background:var(--bg)}
+.nogl[hidden]{display:none}
+
+/* ---- Tela da TV (efeito CRT inspirado em "CRT TV" de Karl Saunders/Mobius1, CodePen ZNgwbr) ---- */
+.tvscreen{width:640px;height:480px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#1a1d1c 0%,#0b0c0c 70%,#050505 100%);border-radius:28px/24px}
+.tvscreen .tube{position:absolute;inset:0;opacity:0}
+.tvscreen.on .tube{opacity:1;animation:on 1.1s linear forwards}
+.tvscreen.turnoff .tube{opacity:1;animation:off .55s cubic-bezier(.23,1,.32,1) forwards}
+.tvscreen .pic{position:absolute;inset:0;background:#000;display:grid;place-items:center;animation:wobblex 100ms infinite,wobbley 100ms infinite}
+.tvscreen .pic iframe,.tvscreen .pic video{width:640px;height:360px;border:0;display:block;background:#000}
+.tvscreen .blue{position:absolute;inset:0;background:var(--vhs);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font:44px/1 var(--vt);letter-spacing:.08em;text-align:center;padding:30px}
+.tvscreen .blue a{font-size:28px;color:#fff;background:#ffffff22;padding:6px 14px;border-radius:4px;text-decoration:none}
+.tvscreen .snow{position:absolute;inset:0;width:100%;height:100%;background:#bdbdbd;opacity:0;transition:opacity .6s;image-rendering:pixelated;pointer-events:none}
+.tvscreen .snow.show{opacity:1;transition:none}
+.tvscreen .osd{position:absolute;left:44px;top:34px;font:46px/1 var(--vt);color:#fff;letter-spacing:.06em;text-shadow:3px 3px 0 #000a;pointer-events:none;opacity:0;transition:opacity .3s}
+.tvscreen .osd.show{opacity:1}
+.tvscreen .osd.r{left:auto;right:44px}
+.tvscreen .scan{position:absolute;inset:0;pointer-events:none;background:linear-gradient(#12101000 50%,#00000040 50%),linear-gradient(90deg,#ff00000f,#00ff0005,#0000ff0f);background-size:100% 3px,3px 100%;animation:flicker .15s infinite}
+.tvscreen .vig{position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:radial-gradient(ellipse at 50% 50%,#0000 58%,#000a 88%,#000 100%),linear-gradient(160deg,#ffffff14 0%,#fff0 30%)}
+.tvscreen.playing .pic{animation:wobblex 100ms infinite,wobbley 100ms infinite,glitch 7s infinite}
+@keyframes on{
+  0%{transform:scale(1,.8) translate3d(0,0,0);filter:brightness(4);opacity:1}
+  3.5%{transform:scale(1,.8) translate3d(0,100%,0)}
+  3.6%{transform:scale(1,.8) translate3d(0,-100%,0);opacity:1}
+  9%{transform:scale(1.3,.6) translate3d(0,100%,0);filter:brightness(4);opacity:0}
+  11%{transform:scale(1,1) translate3d(0,0,0);filter:contrast(0) brightness(0);opacity:0}
+  100%{transform:scale(1,1) translate3d(0,0,0);filter:contrast(1) brightness(1.1) saturate(1.2);opacity:1}}
+@keyframes off{
+  0%{transform:scale(1,1);filter:brightness(1)}
+  40%{transform:scale(1,.005);filter:brightness(100)}
+  70%{transform:scale(1,.005)}
+  90%{transform:scale(.005,.005)}
+  100%{transform:scale(0,0)}}
+@keyframes wobblex{50%{left:1px}51%{left:0}}
+@keyframes wobbley{0%{top:-1px}50%{top:0}}
+@keyframes flicker{50%{opacity:.85}}
+@keyframes glitch{
+  0%,30%,32%,100%{transform:none;filter:none}
+  31%{transform:skewX(8deg) scale(1.02,1);filter:hue-rotate(40deg) contrast(1.4)}
+  31.5%{transform:translateX(-6px) skewX(-4deg)}
+  70%,72%{transform:none}
+  71%{transform:translateY(4px) scale(1,1.01);filter:saturate(2)}}
+@media (prefers-reduced-motion:reduce){
+  .tvscreen .pic,.tvscreen.playing .pic,.tvscreen .scan{animation:none}
+}
+</style>
+
+<div id="stage"><div id="css3d"></div><canvas id="gl" aria-label="Estante de fitas VHS, VCR e TV de tubo"></canvas></div>
+
+<header class="hud top">
+  <a class="chip" href="cinemateca.html" title="Voltar ao catálogo">← Catálogo</a>
+  <div class="brand"><b>Locadora <span>Estranha</span></b><small id="tagline">fitas · sessões</small></div>
+  <nav class="tabs" id="tabs" aria-label="Prateleiras"></nav>
+  <div class="search">
+    <input id="q" type="search" placeholder="Procurar fita…" autocomplete="off" aria-label="Procurar fita">
+    <div class="results" id="results" hidden></div>
+  </div>
+  <button class="chip" id="sound" type="button" aria-pressed="true">Som</button>
+  <button class="chip" id="creditsBtn" type="button">Créditos</button>
+</header>
+
+<div class="hint" id="hint">Arraste para andar pela estante · clique numa fita</div>
+<div class="zoom"><button class="chip" type="button" id="zin" aria-label="Aproximar">+</button><button class="chip" type="button" id="zout" aria-label="Afastar">−</button></div>
+<div class="tip" id="tip" hidden></div>
+<aside class="card" id="card" hidden aria-live="polite"></aside>
+<div class="watchbar" id="watchbar" hidden>
+  <button class="chip primary" type="button" id="eject">⏏ Ejetar</button>
+  <button class="chip" type="button" id="frame">Afastar</button>
+</div>
+
+<div class="loading" id="loading"><p>REBOBINANDO…<small>por favor, rebobine a fita antes de devolver</small></p></div>
+<div class="nogl" id="nogl" hidden><div><h2>Sem sinal</h2><p>Este navegador não tem WebGL, então a locadora não abre aqui.</p><a class="chip primary" href="cinemateca.html">Ir para o catálogo</a></div></div>
+
+<dialog id="credits" aria-labelledby="crTitle">
+  <h2 id="crTitle">Créditos</h2>
+  <div id="crBody"></div>
+  <form method="dialog"><button class="chip">Fechar</button></form>
+</dialog>
+
+<script>
+const MOVIES = [{"id":"tt8015444","title":"Last and First Men","aka":[],"year":2020,"cats":["weird"],"genres":["Musical","Ficção científica"],"countries":["Reino Unido"],"directors":["Jóhann Jóhannsson"],"cast":"Tilda Swinton","kind":null,"tr":"/_blob/79de7826b5f502f3e76f6ebed39c6d69","ytt":"nqDBlBKlbDA"},{"id":"tt0112922","title":"El Día de la Bestia","aka":["O Dia da Besta","The Day of the Beast"],"year":1995,"cats":["weird"],"genres":["Comédia","Policial","Suspense","Terror"],"countries":["Espanha"],"directors":["Álex de la Iglesia"],"cast":"Álex Angulo, Armando De Razza","kind":null,"tr":"/_blob/17cd371f0026a12681ca20387a9d3574","ytt":"iUtXKhWTX3A"},{"id":"tt1691323","title":"Attenberg","aka":[],"year":2010,"cats":["weird"],"genres":["Drama"],"countries":["Grécia"],"directors":["Athina Rachel Tsangari"],"cast":"Ariane Labed, Vangelis Mourikis","kind":null,"tr":"/_blob/617c52f53ff649370f5de9e645de62a8","ytt":"ZyfGZpzoDDc"},{"id":"tt0076162","title":"Hausu","aka":["House"],"year":1977,"cats":["weird","thelema"],"genres":["Comédia","Experimental","Fantasia","Terror"],"countries":["Japão"],"directors":["Nobuhiko Obayashi"],"cast":"Kimiko Ikegami, Miki Jinbo","kind":null,"tr":"/_blob/b5c090b74d77b89076d87742cec91095","ytt":"7-u8s49Lv28"},{"id":"tt2366608","title":"Lost River","aka":["Rio Perdido"],"year":2014,"cats":["weird"],"genres":["Fantasia","Thriller"],"countries":["Estados Unidos"],"directors":["Ryan Gosling"],"cast":"Christina Hendricks, Iain De Caestecker","kind":null,"tr":"/_blob/026aa874436e46614e10f5b68ad865c0","ytt":"iqqfgijZfvc"},{"id":"tt5715874","title":"The Killing of a Sacred Deer","aka":["O Sacrifício do Cervo Sagrado"],"year":2017,"cats":["weird"],"genres":["Drama","Mistério","Suspense"],"countries":["Estados Unidos","Reino Unido"],"directors":["Yorgos Lanthimos"],"cast":"Barry G. Bernson, Herb Caillouet","kind":null,"tr":"/_blob/45d9849602409f348c5dc74287ea4391","ytt":"CQFdGfwChtw"},{"id":"tt3066630","title":"The Forbidden Room","aka":["O Quarto Proibido"],"year":2015,"cats":["weird"],"genres":["Drama","Mistério","Comédia"],"countries":["Canadá"],"directors":["Guy Maddin"],"cast":"Roy Dupuis, Clara Furey","kind":null,"tr":"/_blob/4e14c75af68a4b91952098be6d91da8e","ytt":"5nqRS204bBA"},{"id":"tt5278832","title":"Córki Dancingu","aka":["A Atração","The Lure"],"year":2015,"cats":["weird"],"genres":["Fantasia","Musical","Thriller"],"countries":["Polônia"],"directors":["Agnieszka Smoczyńska"],"cast":"Marta Mazurek, Michalina Olszańska","kind":null,"tr":"/_blob/9cd067952afec32de4be62130616b095","ytt":"ZRiEYcAeOjc"},{"id":"tt2153963","title":"Tabu","aka":[],"year":2012,"cats":["weird"],"genres":["Drama"],"countries":["Portugal"],"directors":["Miguel Gomes"],"cast":"Telmo Churro, Miguel Gomes","kind":null,"tr":"/_blob/16d5044ae9b01ccbdf77576fda0f339c","ytt":"JsZM6h7TVjw"},{"id":"tt5688932","title":"Sorry to Bother You","aka":["Desculpe Te Incomodar","Desculpe te incomodar"],"year":2018,"cats":["weird","mindfuck"],"genres":["Comédia","Drama","Ficção científica"],"countries":["Estados Unidos"],"directors":["Boots Riley"],"cast":"LaKeith Stanfield, Tessa Thompson","kind":null,"tr":"/_blob/2d52c6b2691d853e2f6b4f50c22f4f43","ytt":"XthLQZWIshQ"},{"id":"tt0082933","title":"Possession","aka":["Possessão"],"year":1981,"cats":["weird"],"genres":["Mistério","Suspense","Terror"],"countries":["França"],"directors":["Andrzej Żuławski"],"cast":"Isabelle Adjani, Sam Neill","kind":null,"tr":"/_blob/a11551cab6e6bbf84670e425a05383f6","ytt":"a9Ht7wL_F98"},{"id":"tt0162023","title":"Tuvalu","aka":[],"year":1999,"cats":["weird"],"genres":["Comédia","Drama","Romance"],"countries":["Alemanha"],"directors":["Veit Helmer"],"cast":"Denis Lavant, Chulpan Khamatova","kind":null,"tr":"/_blob/13d45cdd30c0d1b85ef3cc171564fa62"},{"id":"tt0083162","title":"Tajemství hradu v Karpatech","aka":["O Misterioso Castelo nos Cárpatos","The Mysterious Castle in the Carpathians"],"year":1981,"cats":["weird"],"genres":["Comédia","Ficção científica","Fantasia"],"countries":["República Tcheca"],"directors":["Oldřich Lipský"],"cast":"Michal Dočolomanský, Evelyna Steimarová","kind":null,"tr":"/_blob/87c82672a00d6955b86cab83513e048c","ytt":"zca9nCm8McY"},{"id":"tt0087020","title":"Calamari Union","aka":[],"year":1985,"cats":["weird"],"genres":["Comédia"],"countries":["Finlândia"],"directors":["Aki Kaurismäki"],"cast":"Timo Eränkö, Kari Heiskanen","kind":null,"tr":"/_blob/1b1dd0294fb57ac783cbc06d5dcf8ecb","ytt":"eTKaBx8AcGA"},{"id":"tt0075161","title":"The Sailor Who Fell from Grace with the Sea","aka":["O Marinheiro Que Caiu em Desgraça com o Mar"],"year":1976,"cats":["weird"],"genres":["Drama","Suspense","Thriller"],"countries":["Reino Unido"],"directors":["Lewis John Carlino"],"cast":"Sarah Miles, Kris Kristofferson","kind":null,"tr":"/_blob/650169cb50e49df160bb7d25aa8aa5b4","ytt":"lXbW7qGuFto"},{"id":"tt1588895","title":"Lung Boonmee Raluek Chat","aka":["Tio Boonmee, Que Pode Recordar Suas Vidas Passadas","Uncle Boonmee Who Can Recall His Past Lives"],"year":2010,"cats":["weird"],"genres":["Drama","Mistério"],"countries":["Tailândia"],"directors":["Apichatpong Weerasethakul"],"cast":"Thanapat Saisaymar, Jenjira Pongpas","kind":null,"tr":"/_blob/f58de6f14c903b3aa5096c8df343a18c","ytt":"iHeD7mA8CO0"},{"id":"tt2253947","title":"Consuming Spirits","aka":[],"year":2012,"cats":["weird"],"genres":["Animação","Mistério","Drama","Suspense"],"countries":["Estados Unidos"],"directors":["Christopher Sullivan"],"cast":"Nancy Andrews, Chris Sullivan","kind":null,"tr":"/_blob/900b892a73b0dff1cb259afdc9dab40b","ytt":"5xXAPZ7Hybo"},{"id":"tt0095444","title":"Killer Klowns from Outer Space","aka":["Palhaços Assassinos do Espaço Sideral","S.O.S. - Palhaços Assassinos"],"year":1988,"cats":["weird"],"genres":["Ficção científica","Comédia","Terror"],"countries":["Estados Unidos"],"directors":["Stephen Chiodo"],"cast":"Grant Cramer, Suzanne Snyder","kind":null,"tr":"/_blob/ffaf9c5df124e0d6977a0313dbff35f7","ytt":"cVQ3AGzeB_0"},{"id":"tt0357474","title":"Belly of the Beast","aka":["Resgate Sem Limites","Para Lá da Lei"],"year":2003,"cats":["weird"],"genres":["Ação"],"countries":["Hong Kong","Canadá","Reino Unido"],"directors":["Ching Siu-tung"],"cast":"Steven Seagal, Byron Mann","kind":"Vídeo","tr":"/_blob/84d144fdd4d9774ff8c8cbfaa702fba0","ytt":"rlLsdG9WxaA"},{"id":"tt2240708","title":"Help, Help, the Globolinks!","aka":["Hilfe! Hilfe! Die Globolinks"],"year":1969,"cats":["weird"],"genres":["Musical","Ficção científica"],"countries":[],"directors":[],"cast":"Ursula Boese, Franz Grundheber","kind":"Telefilme"},{"id":"tt0066546","title":"Warum läuft Herr R. Amok?","aka":["Por que Deu a Louca no Sr. R.?","Why Does Herr R. Run Amok?"],"year":1970,"cats":["weird"],"genres":["Drama"],"countries":["Alemanha"],"directors":["Rainer Werner Fassbinder","Michael Fengler"],"cast":"Lilith Ungerer, Kurt Raab","kind":null,"tr":"/_blob/36608ee30fb0734941a580975caed14e","ytt":"vCmfhi4jvu0"},{"id":"tt0110843","title":"Plan 10 from Outer Space","aka":["Plano 10 do Espaço Sideral"],"year":1995,"cats":["weird"],"genres":["Ficção científica","Comédia"],"countries":["Estados Unidos"],"directors":["Trent Harris"],"cast":"Stefene Russell, Karen Black","kind":null,"tr":"/_blob/d7976c90a1f55cb20deb9eb65832fda6","ytt":"iiVwtYsyNZ4"},{"id":"tt0061879","title":"Konec srpna v Hotelu Ozon","aka":["Final de Agosto no Hotel Ozone","Late August at the Hotel Ozone"],"year":1967,"cats":["weird"],"genres":["Drama"],"countries":["Tchecoslováquia"],"directors":["Jan Schmidt"],"cast":"Vladimír Hlavatý, Jitka Horejsi","kind":null,"tr":"/_blob/da43fe47304159793093ecf8d367cf63","ytt":"MkH6WjuflMQ"},{"id":"tt0179196","title":"Zbogum na dvaesetiot vek","aka":["Goodbye, 20th Century"],"year":1998,"cats":["weird"],"genres":["Aventura","Comédia","Fantasia","Terror"],"countries":["Macedônia"],"directors":["Darko Mitrevski","Aleksandar Popovski"],"cast":"Lazar Ristovski, Nikola Ristanovski","kind":null,"tr":"/_blob/90d404fe3416924592c6fc030148f179","ytt":"4CAdlXZ-MKU"},{"id":"tt0089489","title":"Lifeforce","aka":["Força sinistra"],"year":1985,"cats":["weird"],"genres":["Ficção científica","Thriller","Terror"],"countries":["Estados Unidos","Reino Unido"],"directors":["Tobe Hooper"],"cast":"Steve Railsback, Mathilda May","kind":null,"tr":"/_blob/887d76fd768fbef890a4bf7e64492ea0","ytt":"B18wv1oAJGc"},{"id":"r25","title":"Contact High: The Good, the Bad and the Bag","aka":[],"year":2009,"cats":["weird"],"genres":["Comédia"],"countries":["Áustria"],"directors":[],"cast":null,"kind":null},{"id":"tt0093171","title":"Hell Comes to Frogtown","aka":["O Inferno Chega a Frogtown","A Continuação da Espécie"],"year":1988,"cats":["weird"],"genres":["Ficção científica","Ação","Comédia"],"countries":["Estados Unidos"],"directors":["Donald G. Jackson"],"cast":"Julius LeFlore, RCB","kind":null,"tr":"/_blob/4c4e116fbe3c2916a1a56695cc8aecd9","ytt":"JUml88mJxyQ"},{"id":"tt0069754","title":"The Baby","aka":["O Bebê"],"year":1973,"cats":["weird"],"genres":["Thriller","Terror"],"countries":["Estados Unidos"],"directors":["Ted Post"],"cast":"Anjanette Comer, Ruth Roman","kind":null,"tr":"/_blob/0766b9454063503f6a0c9c370f52f6e4","ytt":"vITUjvwnavc"},{"id":"tt1121931","title":"Crank 2: High Voltage","aka":["Adrenalina 2: Alta Voltagem","Crank: High Voltage"],"year":2009,"cats":["weird"],"genres":["Ação","Drama","Suspense"],"countries":["Estados Unidos"],"directors":["Brian Taylor","Mark Neveldine"],"cast":"Jason Statham, Amy Smart","kind":null,"tr":"/_blob/1f6502d4604780163d7f4a486bb43507","ytt":"p8pjrwpS0zE"},{"id":"tt0097942","title":"Mystics in Bali","aka":[],"year":1981,"cats":["weird"],"genres":["Terror"],"countries":["Indonésia"],"directors":["H. Tjut Djalil"],"cast":"Ilona Agathe Bastian, Yos Santo","kind":null,"tr":"/_blob/936b5fee60afb5466cdfa23b535c5aa6","ytt":"Zc-ZylFlDng"},{"id":"tt1305797","title":"Enthiran","aka":[],"year":2010,"cats":["weird"],"genres":["Ação","Ficção científica"],"countries":["Índia"],"directors":["S. Shankar"],"cast":"Rajinikanth, Aishwarya Rai Bachchan","kind":null,"tr":"/_blob/092aca43d63d79a5e8437a9fa23d3fae","ytt":"jZnHtX-1jmU"},{"id":"tt0175536","title":"Freeway II: Confessions of a Trickbaby","aka":[],"year":1999,"cats":["weird"],"genres":["Drama","Policial"],"countries":["Estados Unidos"],"directors":["Matthew Bright"],"cast":"Natasha Lyonne, María Celedonio","kind":null,"tr":"/_blob/033e43a43cbb0b78b442ad76f472f5ab","ytt":"1ImBo3Fi0eM"},{"id":"tt0087805","title":"Ninja III: The Domination","aka":["Ninja 3: A Dominação"],"year":1984,"cats":["weird"],"genres":["Ação","Fantasia","Terror"],"countries":["Estados Unidos"],"directors":["Sam Firstenberg"],"cast":"Shô Kosugi, Lucinda Dickey","kind":null,"tr":"/_blob/c93c7a24f008d3f9ab28e83469c331bc","ytt":"LIOelgaYlM8"},{"id":"tt0075930","title":"God Told Me To","aka":["Foi Deus Quem Mandou","Meurtres Sous Contrôle","Demon","Foi Deus Quem Ordenou"],"year":1976,"cats":["weird"],"genres":["Terror"],"countries":["Estados Unidos"],"directors":["Larry Cohen"],"cast":"Tony Lo Bianco, Deborah Raffin","kind":null,"tr":"/_blob/0ade8cd52f65bc11030144e6af86072b","ytt":"apaaYpyVObw"},{"id":"tt0106341","title":"Bad Boy Bubby","aka":["Bad Boy"],"year":1993,"cats":["weird"],"genres":["Drama"],"countries":["Austrália"],"directors":["Rolf de Heer"],"cast":"Nicholas Hope, Claire Benito","kind":null,"tr":"/_blob/65cd20a44a022795507c08a93c66b83c","ytt":"_3LbPmFE2HU"},{"id":"tt1296373","title":"The FP","aka":[],"year":2011,"cats":["weird"],"genres":["Comédia","Ação"],"countries":["Estados Unidos"],"directors":["Brandon Trost","Jason Trost"],"cast":"Jason Trost, Lee Valmassy","kind":null,"tr":"/_blob/ac719b6d2867e17402ee595c889f9bea","ytt":"5AkWE4YKIyk"},{"id":"tt1727261","title":"Father's Day","aka":["Dia dos Pais"],"year":2011,"cats":["weird"],"genres":["Comédia","Ação","Terror"],"countries":["Estados Unidos"],"directors":["Matthew Kennedy","Steven Kostanski","Conor Sweeney","Jeremy Gillespie","Adam Brooks"],"cast":"Adam Brooks, Matthew Kennedy","kind":null,"tr":"/_blob/379b6c56ea2f47ccb8fc97866634bd43","ytt":"G2uOf99PaV8"},{"id":"tt1528769","title":"Kommandør Treholt & ninjatroppen","aka":["Comandante Treholt e Sua Tropa de Ninjas"],"year":2010,"cats":["weird"],"genres":["Ação","Comédia","Fantasia"],"countries":["Noruega"],"directors":["Thomas Cappelen Malling"],"cast":"Mads Ousdal, Jon Øigarden","kind":null,"tr":"/_blob/835ed94601a591b32763fb7f571e898b","ytt":"o07DFBQetzg"},{"id":"tt3102906","title":"Când se lasa seara peste Bucuresti sau metabolism","aka":["Quando a Noite Cai em Bucareste ou Metabolismo","When Evening Falls on Bucharest or Metabolism"],"year":2013,"cats":["weird"],"genres":["Drama"],"countries":["Romênia"],"directors":["Corneliu Porumboiu"],"cast":"Bogdan Dumitrache, Diana Avramut","kind":null,"tr":"/_blob/19a86b8f3059a50a0ec93a8cf33ccac1","ytt":"NYx0qDT6FR4"},{"id":"tt2400275","title":"Adieu au Langage","aka":["Adeus à Linguagem","Farewell To Language","Goodbye to Language"],"year":2014,"cats":["weird"],"genres":["Drama","Experimental"],"countries":["França"],"directors":["Jean-Luc Godard"],"cast":"Héloïse Godet, Kamel Abdelli","kind":null,"tr":"/_blob/c6b13f0929fb6cc332e4fe08e56758b7","ytt":"fSxB5jxcBcI"},{"id":"tt1270631","title":"A Erva do Rato","aka":[],"year":2009,"cats":["mundo"],"genres":["Drama"],"countries":["Brasil"],"directors":["Júlio Bressane"],"cast":"Selton Mello, Alessandra Negrini","kind":null,"tr":"/_blob/0f2316fbec130a7142a93b6eb1b18663","ytt":"XksiN5dE1CE"},{"id":"tt1794790","title":"Finisterrae","aka":[],"year":2010,"cats":["mundo"],"genres":["Experimental","Fantasia","Mistério"],"countries":["França"],"directors":["Sergio Caballero Lecha"],"cast":"Pau Nubiola, Santi Serra","kind":null,"tr":"/_blob/41afffb7a2a407d1fb2644016ad2274e","ytt":"Jv1QN33gLmA"},{"id":"tt0070235","title":"J'irai comme un cheval fou","aka":["Irei Como um Cavalo Louco","I Will Walk Like a Crazy Horse"],"year":1973,"cats":["mundo"],"genres":["Drama","Fantasia"],"countries":["França"],"directors":["Fernando Arrabal"],"cast":"Gerard Borlant, Jean Chalon","kind":null,"tr":"/_blob/666bd6df1f5643ad6b9b7e6552b126ad","ytt":"dQgu4sVj3Ek"},{"id":"tt3763866","title":"Zoom","aka":[],"year":2015,"cats":["mundo"],"genres":["Animação","Comédia","Drama"],"countries":["Brasil","Canadá"],"directors":["Pedro Morelli"],"cast":"Tyler Labine, Alison Pill","kind":null,"tr":"/_blob/4457c99d8a6caa91a7ce916b45b07132","ytt":"24KEQ5MrcT8"},{"id":"tt0061706","title":"Il Giardino delle Delizie","aka":["O Jardim Das Delícias"],"year":1967,"cats":["mundo"],"genres":["Drama","Fantasia","Mistério"],"countries":["Itália"],"directors":["Silvano Agosti"],"cast":"Maurice Ronet, Ida Galli","kind":null,"tr":"/_blob/4df3788daeb45490e647e5382f229fd6","ytt":"A5dQUkMsOS8"},{"id":"tt0790799","title":"$9.99","aka":[],"year":2008,"cats":["mundo"],"genres":["Animação","Drama"],"countries":["Austrália"],"directors":["Tatia Rosenthal"],"cast":"Geoffrey Rush, Anthony LaPaglia","kind":null,"tr":"/_blob/ec5568575be96f9616dd9248d0c81f57","ytt":"lZYmUTAFcGo"},{"id":"tt0108069","title":"The Secret Adventures of Tom Thumb","aka":[],"year":1993,"cats":["mundo"],"genres":["Animação","Mistério"],"countries":["Reino Unido"],"directors":["Dave Borthwick"],"cast":"Nick Upton, Deborah Collard","kind":null,"tr":"/_blob/4d066f84b483ca195059afdc887b8f7c","ytt":"t8G_imDKpVA"},{"id":"tt0963977","title":"Szklane usta","aka":["Lábios de Vidro","Glass Lips"],"year":2007,"cats":["mundo"],"genres":["Drama"],"countries":["Polônia","Estados Unidos"],"directors":["Lech Majewski"],"cast":"Joanna Litwin, Grzegorz Przybyl","kind":null},{"id":"tt4247428","title":"Endorphine","aka":["Endorfina"],"year":2015,"cats":["mundo"],"genres":["Drama"],"countries":["Canadá"],"directors":["André Turpin"],"cast":"Sophie Nélisse, Mylène Mackay","kind":null,"tr":"/_blob/1de840eaca6bb6d279bd419c4299afb9","ytt":"NtWJ3bqmbFs"},{"id":"tt0204913","title":"Book of Days","aka":[],"year":1988,"cats":["mundo"],"genres":["Drama","Experimental","Fantasia"],"countries":["Estados Unidos"],"directors":["Meredith Monk"],"cast":"Robert Een, Donna M. Fields","kind":null,"tr":"/_blob/aac72f8206ded377f734dac58919b202","ytt":"24Hvu2vI22I"},{"id":"tt0429489","title":"A Ay","aka":["Um Mês","Oh, Moon!"],"year":1988,"cats":["mundo"],"genres":["Fantasia","Drama"],"countries":["Turquia"],"directors":["Reha Erdem"],"cast":"Yesim Tozan, Gülsen Tuncer","kind":null,"tr":"/_blob/716f590da58c5c40144f88f63207134c","ytt":"480IQ2m7Vcs"},{"id":"tt0081549","title":"Splav meduze","aka":["Raft of the Medusa","The Medusa Raft"],"year":1980,"cats":["mundo"],"genres":["Drama"],"countries":["Eslovênia"],"directors":["Karpo Godina"],"cast":"Olga Kacjan, Vladislava Milosavljevic","kind":null,"tr":"/_blob/8066ce413ecc7ec15b8f85bf42c94690","ytt":"dsW9ZZw66g0"},{"id":"tt0934870","title":"Jedné noci v jednom městě","aka":["Uma Noite na Cidade","One Night at City","One Night in a City"],"year":2007,"cats":["mundo"],"genres":["Animação","Mistério","Comédia","Fantasia"],"countries":["República Tcheca"],"directors":["Jan Balej"],"cast":"Jiří Lábus, Jan Novotný","kind":null,"tr":"/_blob/409014d48283264a81804105fb8d1385","ytt":"NJ6L7ZocNMY"},{"id":"tt0827498","title":"Blood Tea and Red String","aka":["Chá de Sangue e Fio Vermelho"],"year":2006,"cats":["mundo"],"genres":["Animação","Experimental","Fantasia"],"countries":["Estados Unidos"],"directors":["Christiane Cegavske"],"cast":"Christiane Cegavske, Linda Hagood","kind":null,"tr":"/_blob/04f47056f99f3f6469111a687c8feccf","ytt":"FR2zL-qErX8"},{"id":"tt0083931","title":"Fehérlófia","aka":["O Filho da Égua Branca","Son of the White Mare"],"year":1981,"cats":["mundo"],"genres":["Animação","Aventura","Fantasia"],"countries":["Hungria"],"directors":["Marcell Jankovics"],"cast":"György Cserhalmi, Vera Pap","kind":null,"tr":"/_blob/a182ef583598f325bfc62854edb8c5e5","ytt":"nl1MZ3x0sNE"},{"id":"tt1397147","title":"Baton","aka":[],"year":2009,"cats":["mundo"],"genres":["Animação"],"countries":["Japão"],"directors":["Ryuhei Kitamura"],"cast":"Hayato Ichihara, Aya Ueto","kind":null,"tr":"/_blob/346dd68a6e0be595241a3ce442a2e384","ytt":"yGrIC_iHZ6c"},{"id":"tt0113429","title":"Institute Benjamenta, or This Dream That One Calls Human Life","aka":["Instituto Benjamenta ou Este Sonho que as Pessoas Chamam de Vida Humana","Institute Benjamenta, or This Dream People Call Human Life"],"year":1995,"cats":["mundo"],"genres":["Drama"],"countries":["Estados Unidos"],"directors":["Stephen Quay","Timothy Quay","Weiser Quay"],"cast":"Mark Rylance, Alice Krige","kind":null,"tr":"/_blob/bc61994d1475a97e432dd2d9633f45d4","ytt":"82U10Ndol7E"},{"id":"tt0076871","title":"Veredas","aka":["Trails"],"year":1977,"cats":["mundo"],"genres":["Drama","História"],"countries":["Portugal"],"directors":["João César Monteiro"],"cast":"Manuela de Freitas, Luís de Sousa Costa","kind":null},{"id":"tt0203987","title":"Tobenai Chinmoku","aka":["O Silêncio Não Tem Asas","Silence Has No Wings"],"year":1966,"cats":["mundo"],"genres":["Drama"],"countries":["Japão"],"directors":["Kazuo Kuroki"],"cast":"Mariko Kaga, Hiroyuki Nagato","kind":null,"tr":"/_blob/f0a764b4e4e66394ea5b039b2321b0bd","ytt":"Cd17qgPbpqE"},{"id":"tt2668150","title":"Pusong Wazak: Isa Na Namang Kwento Ng Pag-ibig Sa Pagitan Ng Puta At Kriminal","aka":["Ruined Heart: Another Love Story Between A Criminal & A Whore","Ruined Heart: Another Lovestory Between a Criminal & a Whore"],"year":2014,"cats":["mundo"],"genres":["Ação","Drama","Musical"],"countries":["Alemanha","Filipinas"],"directors":["Khavn De La Cruz"],"cast":"Tadanobu Asano, Nathalia Acevedo","kind":null,"tr":"/_blob/889597ddbb338e322b66c31759a3a755","ytt":"QiulQZK24Ac"},{"id":"r60","title":"Der Tod Der Maria Malibran","aka":["A Morte De Maria Malibran"],"year":1976,"cats":["mundo"],"genres":["Drama","Fantasia","Música"],"countries":["Alemanha"],"directors":[],"cast":null,"kind":null},{"id":"tt0092227","title":"De wisselwachter","aka":["O Homem da Linha"],"year":1986,"cats":["mundo"],"genres":["Drama"],"countries":["Holanda"],"directors":["Jos Stelling"],"cast":"Jim van der Woude, Stéphane Excoffier","kind":null,"tr":"/_blob/9fa91ca4c167688969ffe1fba022f5de","ytt":"ABs9sEVgyqM"},{"id":"tt0232480","title":"To Prosopo Tis Medousas","aka":["Vortex","The Face of Medusa"],"year":1967,"cats":["mundo"],"genres":["Drama"],"countries":["Grécia"],"directors":["Nikos Koundouros"],"cast":"Fanis Hinas, Philippo Vlachos","kind":null,"tr":"/_blob/cf96f027ea448de6d2f69cf558ad5527","ytt":"nDhGGoFjyYk"},{"id":"tt0094349","title":"Yeelen","aka":["A Luz"],"year":1987,"cats":["mundo"],"genres":["Fantasia","Família"],"countries":["Burkina Faso","Indonésia","Alemanha","França","Japão"],"directors":["Souleymane Cissé"],"cast":"Issiaka Kane, Aoua Sangare","kind":null,"tr":"/_blob/327947ede695c885835c5677db365659","ytt":"GRlNG9lJ6rs"},{"id":"r64","title":"Taking Tiger Mountain","aka":[],"year":1983,"cats":["mundo"],"genres":["Ficção científica"],"countries":["Estados Unidos"],"directors":[],"cast":null,"kind":null,"tr":"/_blob/81cf6a6983c86c13c4436b76fce57a05","ytt":"O-wi8txL8n8"},{"id":"tt2160163","title":"Exaella","aka":[],"year":2011,"cats":["mundo"],"genres":["Animação","Ação","Drama"],"countries":["Rússia"],"directors":[],"cast":"Akari Yamamoto, Sara Matsui-Colby","kind":null,"tr":"/_blob/029c41e6bce01e37099e53e2881d8ffd","ytt":"mNjPWHZfBGI"},{"id":"tt1319590","title":"Winterstilte","aka":["Winter Silence"],"year":2009,"cats":["mundo"],"genres":["Drama"],"countries":["Holanda"],"directors":[],"cast":"Sandra Utzinger, Brigitta Weber","kind":null,"tr":"/_blob/9fdcf5311e1d18a6c058947bc06691fe","ytt":"KsrO8zcgXSQ"},{"id":"tt1813148","title":"Alice in the Underworld: The Dark Märchen Show!!","aka":["Alice in the Underworld: The Dark Märchen Show!","Alice in the Underworld"],"year":2009,"cats":["mundo"],"genres":["Drama","Fantasia"],"countries":["Japão"],"directors":[],"cast":"Rose de Reficul, Guiggles","kind":"Vídeo","tr":"/_blob/bcff5261fffc56869ba0aa6fa037bc4b","ytt":"-jX2bkKBNfU"},{"id":"r68","title":"Alpha","aka":[],"year":2014,"cats":["mundo"],"genres":["Drama","Mistério","Thriller"],"countries":["Grécia"],"directors":[],"cast":null,"kind":null},{"id":"tt0125461","title":"Planetens spejle","aka":["Espelhos do planeta","Mirror of the planet","Mirror of the Planet"],"year":1992,"cats":["mundo"],"genres":["Drama"],"countries":["Dinamarca"],"directors":["Jytte Rex"],"cast":"Ole Lemmeke, Cher Guertze","kind":null},{"id":"tt0368821","title":"Jôhatsu Tabinikki","aka":["The Soul Odyssey"],"year":2003,"cats":["mundo"],"genres":["Drama"],"countries":["Japão"],"directors":[],"cast":"Cosmosco, Kinue Fuji","kind":null,"tr":"/_blob/ab9685917fea1565a3d381c64308526e","ytt":"jVhAkAoDnak"},{"id":"r71","title":"Hako","aka":["The Box"],"year":2003,"cats":["mundo"],"genres":["Drama","Ficção científica"],"countries":["Japão"],"directors":[],"cast":null,"kind":null},{"id":"tt0113205","title":"Grający z talerza","aka":["Cymbal Player","The Man Who Reads Music From The Plates","Grajacy z talerza"],"year":1995,"cats":["mundo"],"genres":["Fantasia"],"countries":["Polônia"],"directors":["Jan Jakub Kolski"],"cast":"Franciszek Pieczka, Dojnica Paladiuk","kind":null},{"id":"tt0236799","title":"Topos","aka":[],"year":1985,"cats":["mundo"],"genres":["Fantasia"],"countries":["Grécia"],"directors":["Antoinetta Angelidi"],"cast":"Jany Gastaldi, Magia Lymberopoulou","kind":null,"tr":"/_blob/0d67b0f25895b07f1c3d96f4c41e3b97","ytt":"rkKAnFX5DdY"},{"id":"tt0087376","title":"Gwen, le livre de sable","aka":["Gwen, O Livro de Areia","Gwen, the Book of Sand"],"year":1985,"cats":["mundo"],"genres":["Animação","Drama","Fantasia"],"countries":["França"],"directors":["Jean-François Laguionie"],"cast":"Michel Robin, Lorella Di Cicco","kind":null,"tr":"/_blob/96d760635a93961662687c6a8100658e","ytt":"fKqTT4-f6ao"},{"id":"tt1623305","title":"Rose, c'est Paris","aka":[],"year":2010,"cats":["mundo"],"genres":["Drama","Documentário"],"countries":["França"],"directors":[],"cast":"Inge van Bruystegem, Virgile Bramly","kind":"Telefilme","tr":"/_blob/fcd0f130cdef7914891c022954a8b9d4","ytt":"O7beqadvTyg"},{"id":"tt2231681","title":"Welcome to Nowhere (Bullet Hole Road)","aka":[],"year":2012,"cats":["mundo"],"genres":["Fantasia"],"countries":["Estados Unidos"],"directors":[],"cast":"Tina Balthazar, Nick Bixby","kind":null,"tr":"/_blob/f388cd7fe1e00df60f9c716b5c41d817","ytt":"pwNBWuv3EZw"},{"id":"tt0143209","title":"Deseos","aka":[],"year":1977,"cats":["mundo"],"genres":["Drama","Fantasia"],"countries":["México"],"directors":[],"cast":"Ernesto Gómez Cruz, Jorge Humberto Robles","kind":null},{"id":"tt0217562","title":"Ilektrikos angelos","aka":["Electric Angel"],"year":1981,"cats":["mundo"],"genres":["Romance"],"countries":["Grécia"],"directors":[],"cast":"Faidon Georgitsis, Marili Tsopanelli","kind":null},{"id":"tt0171474","title":"Lesnaya pesnya. Mavka","aka":["Lisova pisnya. Mavka"],"year":1981,"cats":["mundo"],"genres":["Fantasia"],"countries":["Rússia"],"directors":["Yuri Ilyenko"],"cast":"Lyudmila Efimenko, Viktor Kremlyov","kind":null,"tr":"/_blob/c167468fb8c31b816324c181528ac139","ytt":"5xDgOFL8wPc"},{"id":"tt0218374","title":"Karagoez catalogo 9,5","aka":[],"year":1983,"cats":["mundo"],"genres":[],"countries":["Itália"],"directors":[],"cast":"","kind":null},{"id":"r81","title":"Pokój saren","aka":["The Roe's Room"],"year":1977,"cats":["mundo"],"genres":["Biografia","Fantasia","Música"],"countries":["Polônia"],"directors":[],"cast":null,"kind":null},{"id":"tt0362873","title":"Monoblock","aka":["Monobloc"],"year":2005,"cats":["mundo"],"genres":["Drama"],"countries":["Argentina"],"directors":["Luis Ortega"],"cast":"Graciela Borges, Rita Cortese","kind":null,"tr":"/_blob/4cfb88e53d8f60731da359c36a5ec6d8","ytt":"5sp4R1z5Djw"},{"id":"tt0481651","title":"Vokaldy paralelder","aka":["Vocal Parallels"],"year":2005,"cats":["mundo"],"genres":["Drama"],"countries":["Cazaquistão"],"directors":["Rustam Khamdamov"],"cast":"Renata Litvinova, Araksiya Davtyan","kind":null},{"id":"tt1371648","title":"朱霊たち (Shureitachi)","aka":["Vermilion Souls"],"year":2007,"cats":["mundo"],"genres":["Drama"],"countries":["Japão","França"],"directors":[],"cast":"Mohamed Aroussi, Taku Furusawa","kind":null,"tr":"/_blob/aeb6d68cc5da0afb010f1c9e79c9b292","ytt":"juj0r_KALWg"},{"id":"tt4653526","title":"Another Trip to the Moon","aka":[],"year":2015,"cats":["mundo"],"genres":["Drama","Fantasia"],"countries":["Indonésia"],"directors":["Ismail Basbeth"],"cast":"Tara Basro, Ratu Anandita","kind":null,"tr":"/_blob/c70e94e44a09ca3b653227165090eef0","ytt":"BVCRUgihCLs"},{"id":"tt1066299","title":"Closed Vision","aka":[],"year":1954,"cats":["mundo"],"genres":["Experimental","Fantasia"],"countries":["Estados Unidos","França"],"directors":["Marc'O"],"cast":"Danièle Maurel, Robert R. Guiot","kind":null,"tr":"/_blob/2ae96f7bb5f7e1760c5b7527514e7f7f","ytt":"mILUF-FzQ8Q"},{"id":"tt0126324","title":"Det gode og det onde","aka":["Good and Evil"],"year":1975,"cats":["mundo"],"genres":["Documentário","Drama"],"countries":["Dinamarca"],"directors":["Jørgen Leth"],"cast":"Claus Nissen, Ulla Gottlieb","kind":null},{"id":"tt0133142","title":"Panna Zázracnica","aka":["A Virgem Milagrosa","Miraculous Virgin","The Miraculous Virgin"],"year":1967,"cats":["mundo"],"genres":["Drama"],"countries":["Tchecoslováquia"],"directors":["Štefan Uher"],"cast":"Jolanta Umecka, Ladislav Mrkvicka","kind":null,"tr":"/_blob/56266e285f23ec23a87ff475eadd952c","ytt":"JJZzlaH9ECc"},{"id":"tt0079258","title":"Habfürdö","aka":["Banho de Espuma"],"year":1980,"cats":["mundo"],"genres":["Musical"],"countries":["Hungria"],"directors":["György Kovásznai"],"cast":"Albert Antalffy, Kati Bontovits","kind":null,"tr":"/_blob/e4cb2ce4c0fa2f46dff530eaf3852eb8","ytt":"ZjFPe6kcwQM"},{"id":"tt0204908","title":"Bo Ba Bu","aka":[],"year":1998,"cats":["mundo"],"genres":["Drama","Fantasia","Mistério"],"countries":["França","Itália","Usbequistão"],"directors":["Ali Hamroyev"],"cast":"Abdrashid Abdrakhmanov, Hodjar Abdullaeva","kind":null,"tr":"/_blob/882b94cfa55e0afcdcec59f32a16859d","ytt":"feIQJfOe4y4"},{"id":"tt0187590","title":"San tiao ren","aka":["Away With Words","Away with Words"],"year":1999,"cats":["mundo"],"genres":[],"countries":["Estados Unidos","Hong Kong","Singapura","Japão"],"directors":["Christopher Doyle"],"cast":"Tadanobu Asano, Georgina Hobson","kind":null,"tr":"/_blob/6cd3c89701f24d5a00284cf03d6826cb","ytt":"_a1CuZnkHvw"},{"id":"tt0243558","title":"Shoujo Kakumei Utena - Adolescence Mokushiroku","aka":["Utena – A Garota Revolucionaria: Uma Aventura Mágica","Revolutionary Girl Utena: The Adolescence of Utena"],"year":1999,"cats":["mundo"],"genres":["Animação","Ação","Aventura"],"countries":["Japão"],"directors":["Kunihiko Ikuhara"],"cast":"Tomoko Kawakami, Yuriko Fuchizaki","kind":null,"tr":"/_blob/9083bd567f7e5e86c17007ea8b95c684","ytt":"Bb1RihZiCEw"},{"id":"tt0291183","title":"Fragile as a world","aka":["Frágil Como o Mundo","Fragile as the World"],"year":2000,"cats":["mundo"],"genres":["Drama","Romance"],"countries":["Portugal"],"directors":["Rita Azevedo Gomes"],"cast":"Maria Gonçalves, Bruno Terra","kind":null,"tr":"/_blob/b4ed5a97fba107caa5e1b0825688c67d","ytt":"1jH9luB5CjI"},{"id":"tt0274193","title":"Vera","aka":[],"year":2003,"cats":["mundo"],"genres":["Mistério","Drama"],"countries":["Estados Unidos","México","França","Alemanha"],"directors":[],"cast":null,"kind":null,"tr":"/_blob/8ad47ce4dd173ec5c6eb3e7087329529","ytt":"nPKaZUBAyhY"},{"id":"r95","title":"Las","aka":["Floresta","The Forest"],"year":2009,"cats":["mundo"],"genres":["Drama","Mistério","Música"],"countries":["Polônia"],"directors":[],"cast":null,"kind":null},{"id":"tt3474462","title":"La Distancia","aka":["The Distance"],"year":2014,"cats":["mundo"],"genres":["Comédia","Ficção científica","Drama","Mistério"],"countries":["França"],"directors":[],"cast":"Jinson Añazco, Pere Celma","kind":null,"tr":"/_blob/a5d2856703ac96e81ddc55b99753b921","ytt":"NbwDea9M6yY"},{"id":"r97","title":"Eggshells","aka":["Cáscaras de huevo"],"year":1969,"cats":["mundo"],"genres":["Fantasia","Drama"],"countries":["Estados Unidos"],"directors":[],"cast":null,"kind":null,"tr":"/_blob/208db7d1b88bbb2eec3ba37623c00be7","ytt":"cRV9GiLLIyo"},{"id":"tt4731136","title":"A Cure for Wellness","aka":["A Cura"],"year":2016,"cats":["mindfuck"],"genres":["Drama","Fantasia","Terror"],"countries":["Estados Unidos","Reino Unido"],"directors":["Gore Verbinski"],"cast":"Dane DeHaan, Jason Isaacs","kind":null,"tr":"/_blob/61f1acfafd8356994ddfd8915f812216","ytt":"4mcVodJmBlU"},{"id":"tt0246578","title":"Donnie Darko","aka":[],"year":2001,"cats":["mindfuck"],"genres":["Drama","Ficção científica","Mistério"],"countries":["Estados Unidos"],"directors":["Richard Kelly"],"cast":"Jake Gyllenhaal, Jena Malone","kind":null,"tr":"/_blob/5b949f92fe6cf9eb32fec14f9c7c8dd5","ytt":"bzLn8sYeM9o"},{"id":"tt2267998","title":"Gone Girl","aka":["Garota Exemplar"],"year":2014,"cats":["mindfuck"],"genres":["Drama","Mistério","Thriller"],"countries":["Estados Unidos"],"directors":["David Fincher"],"cast":"Ben Affleck, Rosamund Pike","kind":null,"tr":"/_blob/4b92d965262c18e006dfcc4ab058ae15","ytt":"2-_-1nJf8Vg"},{"id":"tt0117381","title":"Primal Fear","aka":["As Duas Faces de um Crime"],"year":1996,"cats":["mindfuck"],"genres":["Drama","Mistério","Policial","Suspense"],"countries":["Estados Unidos"],"directors":["Gregory Hoblit"],"cast":"Richard Gere, Laura Linney","kind":null,"tr":"/_blob/3c9a14e25a3f0eaca81338ca4f1e29a1","ytt":"glWAjoDVH3c"},{"id":"tt0259711","title":"Vanilla Sky","aka":[],"year":2001,"cats":["mindfuck"],"genres":["Fantasia","Mistério","Romance"],"countries":["Estados Unidos","Espanha"],"directors":["Cameron Crowe"],"cast":"Tom Cruise, Penélope Cruz","kind":null,"tr":"/_blob/b6122eae1824d07e0c8e29f6d819a19e","ytt":"k09OX40NLUw"},{"id":"tt2316411","title":"Enemy","aka":["O Homem Duplicado"],"year":2013,"cats":["mindfuck"],"genres":["Mistério","Thriller"],"countries":["Canadá","Espanha","França"],"directors":["Denis Villeneuve"],"cast":"Jake Gyllenhaal, Mélanie Laurent","kind":null,"tr":"/_blob/20fd7f67fcb026a77322a2091a81bb1b","ytt":"aVvgt3jIUsc"},{"id":"tt1187064","title":"Triangle","aka":["Triângulo do Medo"],"year":2009,"cats":["mindfuck"],"genres":["Fantasia","Mistério","Terror","Thriller"],"countries":["Reino Unido"],"directors":["Christopher Smith"],"cast":"Melissa George, Joshua McIvor","kind":null,"tr":"/_blob/877960ffcccedd37e7e65ef5a471c180","ytt":"ZEHevCzlDNg"},{"id":"tt4016934","title":"Ah-ga-ssi / 아가씨","aka":["A Criada","The Handmaiden"],"year":2016,"cats":["mindfuck"],"genres":["Drama","Romance","Suspense"],"countries":["Coreia do Sul"],"directors":["Park Chan-wook"],"cast":"Kim Min-hee, Ha Jung-woo","kind":null,"tr":"/_blob/f015415dbc194b9274a25d152c41d86b","ytt":"XHAPwAgf2aI"},{"id":"tt1255953","title":"Incendies","aka":["Incêndios"],"year":2010,"cats":["mindfuck"],"genres":["Drama","Guerra","Mistério"],"countries":["Canadá","França"],"directors":["Denis Villeneuve"],"cast":"Lubna Azabal, Mélissa Désormeaux-Poulin","kind":null,"tr":"/_blob/ccd3ce5089dab5633b87514ecce3841a","ytt":"XJ69WnwvZhE"},{"id":"tt0290673","title":"Irréversible","aka":["Irreversível","IЯЯƎVƎЯSIBLƎ","Irreversible"],"year":2002,"cats":["mindfuck"],"genres":["Drama","Policial","Suspense"],"countries":["França"],"directors":["Gaspar Noé"],"cast":"Monica Bellucci, Vincent Cassel","kind":null,"tr":"/_blob/6d760e8cbec9864f63ff6fffeb809d5f","ytt":"qZOuJ5j2sv8"},{"id":"tt0414993","title":"The Fountain","aka":["Fonte da Vida"],"year":2006,"cats":["mindfuck"],"genres":["Drama","Ficção científica","Romance"],"countries":["Estados Unidos"],"directors":["Darren Aronofsky"],"cast":"Hugh Jackman, Rachel Weisz","kind":null,"tr":"/_blob/2cd0a983b469c2d81e1bc6c31e950d30","ytt":"m8IlyFCbNZg"},{"id":"tt0243017","title":"Waking Life","aka":["Acordar para a Vida"],"year":2001,"cats":["mindfuck"],"genres":["Animação","Drama","Fantasia","Mistério"],"countries":["Estados Unidos"],"directors":["Richard Linklater"],"cast":"Ethan Hawke, Trevor Jack Brooks","kind":null,"tr":"/_blob/3086a52197c5a06eaaddc718af5ad338","ytt":"edrGozs6W_I"},{"id":"tt2562232","title":"Birdman or (The Unexpected Virtue of Ignorance)","aka":["Birdman ou (A Inesperada Virtude da Ignorância)"],"year":2014,"cats":["mindfuck"],"genres":["Comédia","Drama","Super-herói"],"countries":["Estados Unidos"],"directors":["Alejandro González Iñárritu"],"cast":null,"kind":null,"tr":"/_blob/242795fe3ad3445e5e6390d58d38d902","ytt":"N9hczEb57sg"},{"id":"tt1379182","title":"Kynodontas","aka":["Dente Canino","Dogtooth","Canine"],"year":2009,"cats":["mindfuck"],"genres":["Drama","Thriller"],"countries":["Grécia"],"directors":["Yorgos Lanthimos"],"cast":"Christos Stergioglou, Michele Valley","kind":null,"tr":"/_blob/d4b088516816e39ff5a2240b32e3affd","ytt":"s0J8Y6McHVI"},{"id":"tt0268978","title":"A Beautiful Mind","aka":["Uma Mente Brilhante"],"year":2001,"cats":["mindfuck"],"genres":["Biografia","Drama"],"countries":["Estados Unidos"],"directors":["Ron Howard"],"cast":"Russell Crowe, Ed Harris","kind":null,"tr":"/_blob/24e4c62d7277eea6fe95e3d1f1d13815","ytt":"EajIlG_OCvw"},{"id":"tt1191111","title":"Enter the Void","aka":["Enter The Void: Viagem Alucinante","Soudain Le Videf"],"year":2009,"cats":["mindfuck"],"genres":["Drama","Experimental"],"countries":["França"],"directors":["Gaspar Noé"],"cast":"Nathaniel Brown, Paz de la Huerta","kind":null,"tr":"/_blob/00d02e3f34d505ccae2e7efabea07083","ytt":"JJkPLYmUyzg"},{"id":"tt0120663","title":"Eyes Wide Shut","aka":["De Olhos Bem Fechados","Traumnovelle","EWS"],"year":1999,"cats":["mindfuck"],"genres":["Drama"],"countries":["Estados Unidos","Reino Unido"],"directors":["Stanley Kubrick"],"cast":"Tom Cruise, Nicole Kidman","kind":null,"tr":"/_blob/7f968a453d38ec43fc24be8c30e4b937","ytt":"xgVo96JaqeM"},{"id":"tt0175880","title":"Magnolia","aka":["Magnólia"],"year":1999,"cats":["mindfuck"],"genres":["Drama"],"countries":["Estados Unidos"],"directors":["Paul Thomas Anderson"],"cast":"Tom Cruise, Jason Robards","kind":null,"tr":"/_blob/34407cc985c42946c7c691bba73f4410","ytt":"2ahUItMF3oE"},{"id":"tt0383028","title":"Synecdoche, New York","aka":["Sinédoque, Nova York"],"year":2008,"cats":["mindfuck"],"genres":["Comédia","Drama"],"countries":["Estados Unidos"],"directors":["Charlie Kaufman"],"cast":"Philip Seymour Hoffman, Samantha Morton","kind":null,"tr":"/_blob/3a6a37fd303ab56ed09e9d045a1f63ec","ytt":"i2q8F0yRmrs"},{"id":"tt0066921","title":"A Clockwork Orange","aka":["Laranja Mecânica"],"year":1971,"cats":["mindfuck"],"genres":["Policial"],"countries":[],"directors":["Stanley Kubrick"],"cast":"Malcolm McDowell, Patrick Magee","kind":null,"tr":"/_blob/da38e6cccabe17844a93e1274efe5966","ytt":"T54uZPI4Z8A"},{"id":"tt0137523","title":"Fight Club","aka":["Clube da Luta"],"year":1999,"cats":["mindfuck"],"genres":["Policial"],"countries":[],"directors":["David Fincher"],"cast":"Brad Pitt, Edward Norton","kind":null,"tr":"/_blob/a344566c21600ecc7f319719029a4376","ytt":"qtRKdVHc-cE"},{"id":"tt0364569","title":"Oldboy","aka":["Old Boy"],"year":2003,"cats":["mindfuck"],"genres":["Policial"],"countries":[],"directors":["Park Chan-wook"],"cast":"Choi Min-sik, Yoo Ji-tae","kind":null,"tr":"/_blob/48e7739c016fa2c4426d6e8ce0b1e8ea","ytt":"tAaBkFChaRg"},{"id":"tt0114369","title":"Seven","aka":[],"year":1995,"cats":["mindfuck"],"genres":["Policial"],"countries":[],"directors":["David Fincher"],"cast":"Morgan Freeman, Brad Pitt","kind":null,"tr":"/_blob/d01ef72d06f552570bc772adaea79258","ytt":"KPOuJGkpblk"},{"id":"tt0114814","title":"The Usual Suspects","aka":["Os Suspeitos"],"year":1995,"cats":["mindfuck"],"genres":["Policial"],"countries":["Estados Unidos","Alemanha"],"directors":["Bryan Singer"],"cast":"Kevin Spacey, Gabriel Byrne","kind":null,"tr":"/_blob/876bc0318236e7c4287013f695ddb256","ytt":"Q0eCiCinc4E"},{"id":"tt0090756","title":"Blue Velvet","aka":["Veludo Azul"],"year":1986,"cats":["mindfuck"],"genres":["Mistério"],"countries":[],"directors":["David Lynch"],"cast":"Isabella Rossellini, Kyle MacLachlan","kind":null,"tr":"/_blob/c69d107196f5e978005e476cfb152083","ytt":"rAA6imfqMYQ"},{"id":"tt0166924","title":"Mulholland Drive","aka":["Cidade dos Sonhos"],"year":2001,"cats":["mindfuck"],"genres":["Mistério"],"countries":[],"directors":["David Lynch"],"cast":"Naomi Watts, Laura Harring","kind":null,"tr":"/_blob/54a1a34da75179dc65730d7986685ee9","ytt":"jbZJ487oJlY"},{"id":"tt0116922","title":"Lost Highway","aka":["Estrada Perdida"],"year":1997,"cats":["mindfuck"],"genres":["Mistério"],"countries":[],"directors":["David Lynch"],"cast":"Bill Pullman, Patricia Arquette","kind":null,"tr":"/_blob/9d99b9a54d0f491fd35a60dc09551cd2"},{"id":"tt0309698","title":"Identity","aka":["Identidade"],"year":2003,"cats":["mindfuck"],"genres":["Thriller"],"countries":["Estados Unidos"],"directors":["James Mangold"],"cast":"John Cusack, Ray Liotta","kind":null,"tr":"/_blob/7a28af8248945e9c9ff42041b881a615","ytt":"TQkG2x3qTf4"},{"id":"tt0460829","title":"Inland Empire","aka":["Imperio dos sonhos"],"year":2006,"cats":["mindfuck"],"genres":["Drama","Experimental","Mistério"],"countries":["Estados Unidos"],"directors":["David Lynch"],"cast":"Karolina Gruszka, Krzysztof Majchrzak","kind":null,"tr":"/_blob/7f4f6c711e13fd491db12f9d4159cc01","ytt":"kS2v-icgBj4"},{"id":"tt0119174","title":"The Game","aka":["Vidas em jogo"],"year":1997,"cats":["mindfuck"],"genres":["Drama","Mistério","Suspense"],"countries":["Estados Unidos"],"directors":["David Fincher"],"cast":"Michael Douglas, Deborah Kara Unger","kind":null,"tr":"/_blob/3a39090ab80e1f641692730080f52957","ytt":"dsvcU3hdi5E"},{"id":"tt0457430","title":"Pan's Labyrinth","aka":["O labirinto do Fauno"],"year":2006,"cats":["mindfuck"],"genres":["Fantasia"],"countries":[],"directors":["Guillermo del Toro"],"cast":"Ivana Baquero, Ariadna Gil","kind":null,"tr":"/_blob/b3a651a611a0f9fde94760589383c63d","ytt":"GsLqd51znII"},{"id":"tt0460791","title":"The fall","aka":["Dublê de anjo","Um Sonho Encantado"],"year":2006,"cats":["mindfuck"],"genres":["Aventura","Drama","Fantasia"],"countries":["Estados Unidos","Índia"],"directors":["Tarsem Singh"],"cast":"Lee Pace, Catinca Untaru","kind":null,"tr":"/_blob/f86ad7a1b0c1eee9f78520bffbc85842","ytt":"OTn5XUFP_iA"},{"id":"tt0071615","title":"The Holy Mountain","aka":["A montanha Sagrada","Holy Mountain","A montanha sagrada"],"year":1973,"cats":["mindfuck","thelema"],"genres":["Aventura","Experimental","Drama","Fantasia"],"countries":["Estados Unidos","México"],"directors":["Alejandro Jodorowsky"],"cast":"Alejandro Jodorowsky, Horacio Salinas","kind":null,"tr":"/_blob/06b75928127d4b57de8c4a459fef6106","ytt":"DSON8vHpxzY"},{"id":"tt0851578","title":"Papurika","aka":["Paprika"],"year":2006,"cats":["mindfuck"],"genres":["Animação"],"countries":["Japão"],"directors":["Satoshi Kon"],"cast":"Megumi Hayashibara, Tôru Emori","kind":null,"tr":"/_blob/bbed988f81c31a537257ef4d118b5ef9","ytt":"PIUqozzyW2k"},{"id":"tt0120382","title":"The Truman Show","aka":["O show de Truman"],"year":1998,"cats":["mindfuck"],"genres":["Comédia"],"countries":["Estados Unidos"],"directors":["Peter Weir"],"cast":"Jim Carrey, Ed Harris","kind":null,"tr":"/_blob/97e65a2b29623716c4f8b5181d3826dc","ytt":"dlnmQbPGuls"},{"id":"tt3464902","title":"The Lobster","aka":["O lagosta"],"year":2015,"cats":["mindfuck"],"genres":["Comédia"],"countries":["França","Grécia","Holanda","Reino Unido"],"directors":["Yorgos Lanthimos"],"cast":"Colin Farrell, Rachel Weisz","kind":null,"tr":"/_blob/067783c8eeef6d59a0f5dd42fe30c3a9","ytt":"dDLUtAVjFV8"},{"id":"tt0268126","title":"Adaptation.","aka":["Adaptação"],"year":2002,"cats":["mindfuck"],"genres":["Comédia"],"countries":["Estados Unidos"],"directors":["Spike Jonze"],"cast":"Nicolas Cage, Meryl Streep","kind":null,"tr":"/_blob/093c400ea73ccc9ea5fcacb9a00d01b3","ytt":"uougMRq-MSo"},{"id":"tt0147612","title":"Happiness","aka":["Felicidade"],"year":1998,"cats":["mindfuck"],"genres":["Comédia"],"countries":["Estados Unidos"],"directors":["Todd Solondz"],"cast":"Jane Adams, Jon Lovitz","kind":null,"tr":"/_blob/48248b1b9c1d198357aeb35b68edb946","ytt":"1eOzYczx-Xk"},{"id":"tt9495224","title":"Black Mirror: Bandersnatch","aka":[],"year":2018,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos","Reino Unido"],"directors":["David Slade"],"cast":"Fionn Whitehead, Craig Parkinson","kind":null,"tr":"/_blob/75579be1d22888ce840427751924de37","ytt":"7wnRi3Sclm8"},{"id":"tt2543164","title":"Arrival","aka":["A chegada"],"year":2016,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos","Canadá"],"directors":["Denis Villeneuve"],"cast":"Amy Adams, Jeremy Renner","kind":null,"tr":"/_blob/b43335d88f3ba7d4a26518a1dbd2060e","ytt":"wjnAgicf94Y"},{"id":"tt0088846","title":"Brazil","aka":["Brazil, o Filme"],"year":1985,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Reino Unido"],"directors":["Terry Gilliam"],"cast":"Jonathan Pryce, Kim Greist","kind":null,"tr":"/_blob/4dcf15260c77871192b6f860ae000559","ytt":"ZKPFC8DA9_8"},{"id":"tt0123755","title":"Cube","aka":["Cubo"],"year":1997,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Canadá"],"directors":["Vincenzo Natali"],"cast":"Nicole de Boer, Maurice Dean Wint","kind":null,"tr":"/_blob/66fd7be6677b15795399a40ffe5eca39","ytt":"nRZ1M4oMGJg"},{"id":"tt0470752","title":"Ex Machina","aka":["Ex Machina: Instinto Artificial"],"year":2014,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Reino Unido"],"directors":["Alex Garland"],"cast":"Alicia Vikander, Domhnall Gleeson","kind":null,"tr":"/_blob/468d4da2ff0024722322437a77032d2f","ytt":"EoQuVnKhxaM"},{"id":"tt1375666","title":"Inception","aka":["Origem"],"year":2010,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos","Reino Unido"],"directors":["Christopher Nolan"],"cast":"Leonardo DiCaprio, Joseph Gordon-Levitt","kind":null,"tr":"/_blob/aa1f683d648a268619ce150acd5b3aff","ytt":"MoilAmwzxWM"},{"id":"tt1188729","title":"Pandorum","aka":[],"year":2009,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Reino Unido"],"directors":["Christian Alvart"],"cast":"Dennis Quaid, Ben Foster","kind":null,"tr":"/_blob/ad5bab648f5e84c9e3f343d7c20f51fa","ytt":"PItZ-qr9jG8"},{"id":"tt0133093","title":"Matrix","aka":["The Matrix"],"year":1999,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos","Austrália"],"directors":["Lilly Wachowski","Lana Wachowski"],"cast":"Keanu Reeves, Laurence Fishburne","kind":null,"tr":"/_blob/3e27167d2b125291fc4f6a79ef821dd2","ytt":"deXW5kTD9Vs"},{"id":"tt1441395","title":"Under the Skin","aka":["Sob a pele"],"year":2013,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Reino Unido"],"directors":["Jonathan Glazer"],"cast":"Scarlett Johansson, Jeremy McWilliams","kind":null,"tr":"/_blob/1dcd5d19f973961d9bcdcc05f14a09ad","ytt":"XSdAZyeaoM8"},{"id":"tt0816692","title":"Interestellar","aka":["Interestelar","Interstellar"],"year":2014,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos","Reino Unido"],"directors":["Christopher Nolan"],"cast":"Matthew McConaughey, Anne Hathaway","kind":null,"tr":"/_blob/250ad223521b6a28018a08950680521f","ytt":"3RcJ73pIqHI"},{"id":"tt0079944","title":"Сталкер","aka":["Stalker","La zona","Vandringsmanden","Στάλκερ","Sztalker"],"year":1979,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Rússia"],"directors":["Andrei Tarkovsky"],"cast":"Alisa Freyndlikh, Aleksandr Kaydanovskiy","kind":null,"tr":"/_blob/9017e6ccaa63fa3ac221d9a5a77967a6","ytt":"YuOnfQd-aTw"},{"id":"tt2866360","title":"Coherence","aka":["Coerência"],"year":2013,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":[],"directors":["James Ward Byrkit"],"cast":"Emily Baldoni, Maury Sterling","kind":null,"tr":"/_blob/48989ee9958706a55b8666fff47d8a10","ytt":"kxAOewNzz-8"},{"id":"tt0485947","title":"Mr. Nobody","aka":["Sr. Ninguém"],"year":2009,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Alemanha","Bélgica","Canadá","França"],"directors":["Jaco Van Dormael"],"cast":"Jared Leto, Sarah Polley","kind":null,"tr":"/_blob/84972b4f91650ab20514aefdd2a6754f","ytt":"iOzbcwNOv4Q"},{"id":"tt0209958","title":"The Cell","aka":["A cela"],"year":2000,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos"],"directors":["Tarsem Singh"],"cast":"Jennifer Lopez, Vince Vaughn","kind":null,"tr":"/_blob/6629b4ce7068511ae57f95e59451a393","ytt":"eIpy4p_yMV0"},{"id":"tt1220198","title":"The Fourth Kind","aka":["Contatos de 4° grau"],"year":2009,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos","Reino Unido"],"directors":["Olatunde Osunsanmi"],"cast":"Milla Jovovich, Elias Koteas","kind":null,"tr":"/_blob/ec36c564e732e4bdf872de97cec6080f","ytt":"wO2abOUvLAs"},{"id":"tt0114746","title":"Twelve Monkeys","aka":["Os 12 macacos","12 Monkeys"],"year":1995,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos"],"directors":["Terry Gilliam"],"cast":"Bruce Willis, Madeleine Stowe","kind":null,"tr":"/_blob/190cd691fe1340a1408f7c56877d7566","ytt":"Nrn6uwZMz2Q"},{"id":"tt0062622","title":"2001: A Space Odyssey","aka":["2001: Uma Odisseia no Espaço"],"year":1968,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos","Reino Unido"],"directors":["Stanley Kubrick"],"cast":"Keir Dullea, Gary Lockwood","kind":null,"tr":"/_blob/be0944b2c3ef22a1c154310fc8c85836","ytt":"oR_e9y-bka0"},{"id":"tt0118929","title":"Dark City","aka":["Cidade das sombras"],"year":1998,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos","Austrália"],"directors":["Alex Proyas"],"cast":"Rufus Sewell, Kiefer Sutherland","kind":null,"tr":"/_blob/8ca70694235ee6a4209a35a3898855ea","ytt":"gt9HkO-cGGo"},{"id":"tt0120907","title":"eXistenZ","aka":[],"year":1999,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Canadá","Reino Unido"],"directors":["David Cronenberg"],"cast":"Jude Law, Jennifer Jason Leigh","kind":null,"tr":"/_blob/923982fa067d0e971b240d218a36eb56","ytt":"CXgOUa91GHg"},{"id":"tt1285010","title":"Summer's Blood","aka":["Maníacos","Summer's Moon"],"year":2009,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":[],"directors":["Lee Demarbre"],"cast":"Ashley Greene, Peter Mooney","kind":null,"tr":"/_blob/d5bf55929b02934ac1f27ba62eb3a456","ytt":"0G5y6zGBm-U"},{"id":"tt0087803","title":"1984","aka":[],"year":1984,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Reino Unido"],"directors":["Michael Radford"],"cast":"John Hurt, Richard Burton","kind":null,"tr":"/_blob/dff30ce328008960f6f03060eb92b121","ytt":"djx5i7nNZ-Y"},{"id":"tt0317042","title":"One Point O","aka":["Um ponto zero"],"year":2004,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos","Islândia","Romênia"],"directors":["Jeff Renfroe","Marteinn Thorsson"],"cast":"Richard Rees, Jeremy Sisto","kind":null,"tr":"/_blob/d661f7fdb30a801ed459b6c2dc6ef4d3","ytt":"8nRspGdAYPE"},{"id":"tt2397535","title":"Predestination","aka":["O predestinado"],"year":2015,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Austrália"],"directors":["Michael Spierig","Peter Spierig"],"cast":"Ethan Hawke, Sarah Snook","kind":null,"tr":"/_blob/6b8c43f507bb6392551bf32833f95418","ytt":"xxG-YfedrfU"},{"id":"tt0390384","title":"Primer","aka":[],"year":2004,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos"],"directors":["Shane Carruth"],"cast":"Shane Carruth, David Sullivan","kind":null,"tr":"/_blob/ce5b861af0bebfc724d6146f069fd848","ytt":"-vD-yj9o664"},{"id":"tt0286106","title":"Signs","aka":["Sinais"],"year":2002,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos"],"directors":["M. Night Shyamalan"],"cast":"Mel Gibson, Joaquin Phoenix","kind":null,"tr":"/_blob/d3fc8326043fdb69a4a511d3b353c823","ytt":"dUw26F0WfLg"},{"id":"tt0069280","title":"Slaughterhouse-Five","aka":["Matadouro 5"],"year":1972,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos"],"directors":["George Roy Hill"],"cast":"Michael Sacks, Ron Leibman","kind":null,"tr":"/_blob/ffafb9707507884946a6ad4998625158","ytt":"DvlZtlBfCi0"},{"id":"tt1017460","title":"Splice","aka":["Splice: A Nova Espécie"],"year":2009,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Canadá"],"directors":["Vincenzo Natali"],"cast":"Adrien Brody, Sarah Polley","kind":null,"tr":"/_blob/dc5b734aabd53e4c9b29c35f96bbe7e8","ytt":"8pIeSYhipUs"},{"id":"tt0448134","title":"Sunshine","aka":["Sunshine: Alerta Solar"],"year":2007,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos","Reino Unido"],"directors":["Danny Boyle"],"cast":"Cillian Murphy, Rose Byrne","kind":null,"tr":"/_blob/f8456dc5adf1a17290bbc9dc1aedc14a","ytt":"FetfR0vQvd4"},{"id":"tt0480669","title":"Los Cronocrímenes","aka":["Crimes temporais","Timecrimes"],"year":2007,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Espanha"],"directors":["Nacho Vigalondo"],"cast":"Karra Elejalde, Candela Fernández","kind":null,"tr":"/_blob/43921b42fa6222e648af492442a40d19","ytt":"gfyQia26_mU"},{"id":"tt2084989","title":"Upstream Color","aka":["Cores do destino","Los colores del destino","Color a contracorriente"],"year":2013,"cats":["mindfuck"],"genres":["Ficção científica"],"countries":["Estados Unidos"],"directors":["Shane Carruth"],"cast":"Amy Seimetz, Frank Mosley","kind":null,"tr":"/_blob/f8615d8d2dc9d41375eccb21c2551ebb","ytt":"SilYsr_3vrA"},{"id":"tt0144084","title":"American Psycho","aka":["Psicopata americano"],"year":2000,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Mary Harron"],"cast":"Christian Bale, Justin Theroux","kind":null,"tr":"/_blob/07bfc298ace9ece1fde0e0f032de1d7a","ytt":"81mibtQWWBg"},{"id":"tt2798920","title":"Annihilation","aka":["Aniquilação"],"year":2018,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Alex Garland"],"cast":"Natalie Portman, Jennifer Jason Leigh","kind":null,"tr":"/_blob/acc7b022cb85eb054856059be8ced4ba","ytt":"ufaDurSCKOk"},{"id":"tt0870984","title":"Antichrist","aka":["Anticristo"],"year":2009,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Lars von Trier"],"cast":"Willem Dafoe, Charlotte Gainsbourg","kind":null,"tr":"/_blob/5c849e28b46df636e72e72a67cc21c4a","ytt":"LO-TNfPzh_k"},{"id":"tt0947798","title":"Black Swan","aka":["Cisne Negro"],"year":2010,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Darren Aronofsky"],"cast":"Natalie Portman, Mila Kunis","kind":null,"tr":"/_blob/bb9b6c089377c300b593879766a34c94","ytt":"5jaI1XOB-bs"},{"id":"tt1954315","title":"Borgman","aka":[],"year":2013,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Alex van Warmerdam"],"cast":"Jan Bijvoet, Hadewych Minis","kind":null,"tr":"/_blob/e8f05ea124a69b41a264fe8c49219f3b","ytt":"5w4u1O8segg"},{"id":"tt0074486","title":"Eraserhead","aka":[],"year":1977,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["David Lynch"],"cast":"Jack Nance, Charlotte Stewart","kind":null,"tr":"/_blob/f481262b3f84d1965de0d1bd89c92927","ytt":"7WAzFWu2tVw"},{"id":"tt0119081","title":"Event Horizon","aka":["O enigma do horizonte"],"year":1997,"cats":["mindfuck"],"genres":["Terror"],"countries":["Estados Unidos","Reino Unido"],"directors":["Paul W. S. Anderson"],"cast":"Laurence Fishburne, Sam Neill","kind":null,"tr":"/_blob/6f34171770cc7f16dd442798fe52f1c3","ytt":"2nlkEY-3CMI"},{"id":"tt5052448","title":"Get Out","aka":["Corra!"],"year":2017,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Jordan Peele"],"cast":"Daniel Kaluuya, Allison Williams","kind":null,"tr":"/_blob/008a93f0533ea500d9a72696b3b94c17","ytt":"DzfpyUB60YY"},{"id":"tt7784604","title":"Hereditary","aka":["Hereditário"],"year":2018,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Ari Aster"],"cast":"Toni Collette, Milly Shapiro","kind":null,"tr":"/_blob/672ec73cdcbb7b46d11a2eed144db17c","ytt":"V6wWKNij_1M"},{"id":"tt0099871","title":"Jacob's Ladder","aka":["Alucinações do passado"],"year":1990,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Adrian Lyne"],"cast":"Tim Robbins, Elizabeth Peña","kind":null,"tr":"/_blob/6cb4fe11bcb8cd020fd595e49f141c21","ytt":"YlN6Q2Esd1o"},{"id":"tt1029234","title":"Martyrs","aka":["Mátires"],"year":2008,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Pascal Laugier"],"cast":"Morjana Alaoui, Mylène Jampanoï","kind":null,"tr":"/_blob/74ab32005637e7594119c1135ca19b03","ytt":"F8RDYD6VhpI"},{"id":"tt8772262","title":"Midsommar","aka":[],"year":2019,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Ari Aster"],"cast":"Florence Pugh, Jack Reynor","kind":null,"tr":"/_blob/a0e5f5ccf06ee488e7e8b9287a461169","ytt":"I0UWIya-O0s"},{"id":"tt5109784","title":"Mother!","aka":["Mãe!"],"year":2017,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Darren Aronofsky"],"cast":"Jennifer Lawrence, Javier Bardem","kind":null,"tr":"/_blob/b4ed98402ec1598d7392a82815f425c2","ytt":"BIHOQBkU7qg"},{"id":"tt0063522","title":"Rosemary's Baby","aka":["O bebê de Rosemary","A Semente do Diabo"],"year":1968,"cats":["mindfuck"],"genres":["Terror"],"countries":["Estados Unidos"],"directors":["Roman Polanski"],"cast":"Mia Farrow, John Cassavetes","kind":null,"tr":"/_blob/f3365105e879182ebf224a54b55da423","ytt":"BjpA6IH_Skc"},{"id":"tt4972582","title":"Split","aka":["Fragmentado"],"year":2016,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["M. Night Shyamalan"],"cast":"James McAvoy, Anya Taylor-Joy","kind":null,"tr":"/_blob/95021522691a3f3495e9a29804e25492","ytt":"KIpGKumxiGg"},{"id":"tt4178092","title":"The Gift","aka":["O presente"],"year":2015,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Joel Edgerton"],"cast":"Jason Bateman, Rebecca Hall","kind":null,"tr":"/_blob/95a43f2b71cbeaaf08b7d637b094b0e6","ytt":"I3IiZU9JBuE"},{"id":"tt7984734","title":"The Lighthouse","aka":["O farol"],"year":2019,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Robert Eggers"],"cast":"Robert Pattinson, Willem Dafoe","kind":null,"tr":"/_blob/ec3bbd7eaec09f2f515fb87ab551e56d","ytt":"Hyag7lR8CPA"},{"id":"tt0884328","title":"The Mist","aka":["O nevoeiro"],"year":2007,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Frank Darabont"],"cast":"Thomas Jane, Marcia Gay Harden","kind":null,"tr":"/_blob/1dea1d4d70b7e5d3c917bbe456971e81","ytt":"LhCKXJNGzN8"},{"id":"tt0464141","title":"The Orphanage","aka":["O orfanato"],"year":2007,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["J. A. Bayona"],"cast":"Belén Rueda, Fernando Cayo","kind":null,"tr":"/_blob/4ddc3c2f307487d8560cbc8afd24dfc7","ytt":"UkuKtS-N1rM"},{"id":"tt0081505","title":"The Shining","aka":["O iluminado"],"year":1980,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Stanley Kubrick"],"cast":"Jack Nicholson, Shelley Duvall","kind":null,"tr":"/_blob/aa819c887ded6db35c8d70592afc6a4e","ytt":"OEQ78fVzgCY"},{"id":"tt5215952","title":"The Wailing","aka":["O lamento"],"year":2016,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Na Hong-jin"],"cast":"Jun Kunimura, Hwang Jung-min","kind":null,"tr":"/_blob/36347e47de723e1d5ec7896f2b7ea4c2","ytt":"43uAputjI4k"},{"id":"tt4263482","title":"The Witch","aka":["A bruxa","A Bruxa"],"year":2015,"cats":["mindfuck","thelema"],"genres":["Terror","Mistério","Suspense","Drama"],"countries":["Estados Unidos","Canadá"],"directors":["Robert Eggers"],"cast":"Anya Taylor-Joy, Ralph Ineson","kind":null,"tr":"/_blob/0aaf1f311886f233bd5e2d7f47044096","ytt":"iQXmlf3Sefg"},{"id":"tt0020530","title":"An Andalusian Dog","aka":["Um cão andaluz"],"year":1929,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Luis Buñuel"],"cast":"Pierre Batcheff, Simone Mareuil","kind":"Curta","tr":"/_blob/5700993a3533c1d7367047ec17786af7","ytt":"cVYpBvIDh9I"},{"id":"tt0084787","title":"The Thing","aka":["O enigma de outro mundo"],"year":1982,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["John Carpenter"],"cast":"Kurt Russell, Wilford Brimley","kind":null,"tr":"/_blob/3e231cbb43ef00eb16733cbbd498e58e","ytt":"hbl1zpD1CMM"},{"id":"tt1034415","title":"Suspiria","aka":[],"year":2018,"cats":["mindfuck"],"genres":["Terror"],"countries":[],"directors":["Luca Guadagnino"],"cast":"Chloë Grace Moretz, Tilda Swinton","kind":null,"tr":"/_blob/9c8b8745fb388a287e120fef83c24cb3","ytt":"3uGIEY7tdg8"},{"id":"tt0338095","title":"Haute Tension","aka":["Alta tensão","High Tension"],"year":2003,"cats":["mindfuck"],"genres":["Terror"],"countries":["França","Itália","Romênia"],"directors":["Alexandre Aja"],"cast":"Cécile de France, Maïwenn","kind":null,"tr":"/_blob/93721285ef7005a2ab18c6d3faa23ef0","ytt":"cCP0nHopT7Y"},{"id":"tt0366627","title":"The Jacket","aka":["Camisa de força"],"year":2005,"cats":["mindfuck"],"genres":["Terror"],"countries":["Estados Unidos"],"directors":["John Maybury"],"cast":"Adrien Brody, Keira Knightley","kind":null,"tr":"/_blob/683d8811b19d8237a43284d98c16a4c1","ytt":"3fPd7_LFOL4"},{"id":"tt0113409","title":"In the Mouth of Madness","aka":["À Beira da Loucura","No Limite da Loucura","A Bíblia de Satanás"],"year":1994,"cats":["mindfuck"],"genres":["Terror"],"countries":["Estados Unidos"],"directors":["John Carpenter"],"cast":"Sam Neill, Jürgen Prochnow","kind":null,"tr":"/_blob/fff096e83d04d843e4d4c8161201ad10","ytt":"AlugldzO9zY"},{"id":"tt3099498","title":"Tusk","aka":["A presa"],"year":2014,"cats":["mindfuck"],"genres":["Terror"],"countries":["Estados Unidos"],"directors":["Kevin Smith"],"cast":"Justin Long, Michael Parks","kind":null,"tr":"/_blob/cb5f7f0a3e1ab71b5e557235b2ccbb86","ytt":"trTTjvPCLJQ"},{"id":"tt0086541","title":"Videodrome","aka":["Videodrome: A Síndrome do Vídeo"],"year":1983,"cats":["mindfuck"],"genres":["Terror"],"countries":["Canadá"],"directors":["David Cronenberg"],"cast":"James Woods, Debbie Harry","kind":null,"tr":"/_blob/59a95e8372a597be1f8f1d124d60d19f","ytt":"XyTaX3DWTas"},{"id":"tt0087075","title":"The Company of Wolves","aka":["A companhia dos lobos"],"year":1984,"cats":["horror"],"genres":[],"countries":["Reino Unido"],"directors":["Neil Jordan"],"cast":"Sarah Patterson, Angela Lansbury","kind":null,"tr":"/_blob/f21670fd126bccb92a3890d3d99c94bd","ytt":"Ir34SoEgik0"},{"id":"tt3908142","title":"The Love Witch","aka":[],"year":2016,"cats":["horror"],"genres":[],"countries":["Estados Unidos"],"directors":["Anna Biller"],"cast":"Samantha Robinson, Jeffrey Vincent Parise","kind":null,"tr":"/_blob/66ae3d7439dec3d040b88958a02be4f9","ytt":"F4DoZlT7KSE"},{"id":"tt2147319","title":"Heruta Sukeruta","aka":["Helter Skelter","ヘルタースケルター"],"year":2012,"cats":["horror"],"genres":[],"countries":["Japão"],"directors":["Mika Ninagawa"],"cast":"Erika Sawajiri, Nao Ōmori","kind":null,"tr":"/_blob/22f4bd89f23cc6ea109b2788566e6a75","ytt":"bcF3BmpYlWY"},{"id":"tt0094964","title":"Dead Ringers","aka":["Gêmeos: Mórbida Semelhança","Irmãos Inseparáveis"],"year":1988,"cats":["horror"],"genres":[],"countries":["Estados Unidos","Canadá"],"directors":["David Cronenberg"],"cast":"Jeremy Irons, Geneviève Bujold","kind":null,"tr":"/_blob/4523352eb8817599d41e86bd64cac09f","ytt":"-ZHbu3msmes"},{"id":"tt0210070","title":"Ginger Snaps","aka":["Possuída","Tentadora Maldição"],"year":2000,"cats":["horror"],"genres":[],"countries":["Canadá"],"directors":["John Fawcett"],"cast":"Emily Perkins, Katharine Isabelle","kind":null,"tr":"/_blob/8ce1d8e94a2686c7b58018ef96eba90e","ytt":"lRXT1J0kqdY"},{"id":"tt0076786","title":"Suspiria","aka":[],"year":1977,"cats":["horror"],"genres":[],"countries":["Itália"],"directors":["Dario Argento"],"cast":"Jessica Harper, Stefania Casini","kind":null,"tr":"/_blob/76b38795d079c582b8405f359289b9a1","ytt":"hPs2ExUL_bc"},{"id":"tt0016847","title":"Faust","aka":[],"year":1926,"cats":["thelema"],"genres":[],"countries":[],"directors":["F. W. Murnau"],"cast":"Gösta Ekman, Emil Jannings","kind":null,"tr":"/_blob/0196968d67a3758c68b40a8030d3667a","ytt":"kV3bjDVIEl0"},{"id":"tt0091142","title":"Gothic","aka":["Gótico"],"year":1986,"cats":["thelema"],"genres":[],"countries":[],"directors":["Ken Russell"],"cast":"Gabriel Byrne, Julian Sands","kind":null,"tr":"/_blob/6c3c246fee95aa1ffc03d296c3a31fb6","ytt":"J_JQ8o2M68w"},{"id":"tt4805316","title":"A Dark Song","aka":[],"year":2016,"cats":["thelema"],"genres":["Terror","Drama"],"countries":["Reino Unido"],"directors":["Liam Gavin"],"cast":"Steve Oram, Catherine Walker","kind":null,"tr":"/_blob/fcf73ea9e93760dde099ee690b433460","ytt":"5-S3JqJZJ3s"},{"id":"r206","title":"A Maldição da Bruxa","aka":[],"year":null,"cats":["thelema"],"genres":[],"countries":[],"directors":[],"cast":null,"kind":null},{"id":"r207","title":"Amaldiçoados","aka":[],"year":null,"cats":["thelema"],"genres":[],"countries":[],"directors":[],"cast":null,"kind":null},{"id":"tt0066019","title":"Lucifer Rising","aka":[],"year":1972,"cats":["thelema"],"genres":["Experimental","Fantasia","Terror","Mistério"],"countries":["Alemanha","Estados Unidos","Reino Unido"],"directors":["Kenneth Anger"],"cast":"Kenneth Anger, Bobby Beausoleil","kind":"Curta","tr":"/_blob/7c129e83508eab4db5f77d900efdd921","ytt":"kU8tcgl7iMI"},{"id":"tt0142688","title":"The Ninth Gate","aka":["O último portal"],"year":1999,"cats":["thelema"],"genres":["Mistério","Suspense"],"countries":["Estados Unidos","Espanha","França"],"directors":["Roman Polanski"],"cast":"Johnny Depp, Frank Langella","kind":null,"tr":"/_blob/f65652e6c958bfd83153f8fba70d24a1","ytt":"IXvMlvJI91Y"},{"id":"tt0080360","title":"Altered States","aka":["Viagens Alucinantes"],"year":1980,"cats":["thelema"],"genres":["Drama","Fantasia","Terror"],"countries":["Estados Unidos"],"directors":["Ken Russell"],"cast":"William Hurt, Blair Brown","kind":null,"tr":"/_blob/5bc124e2765d80b627f2bb237f14dfc5","ytt":"67lYG7a4YOA"},{"id":"tt0013257","title":"Häxan","aka":["Haxan"],"year":1922,"cats":["thelema"],"genres":["Documentário","Terror","Fantasia"],"countries":["Suécia"],"directors":["Benjamin Christensen"],"cast":"Benjamin Christensen, Elisabeth Christensen","kind":null,"tr":"/_blob/1b5caf4bb28df90d8ae9269754857c13","ytt":"B4VVq73xKoY"},{"id":"tt0067866","title":"El Topo","aka":[],"year":1970,"cats":["thelema"],"genres":["Experimental","Faroeste"],"countries":["México"],"directors":["Alejandro Jodorowsky"],"cast":"Alejandro Jodorowsky, Brontis Jodorowsky","kind":null,"tr":"/_blob/8db0d3fd996b551db366f4f5f998f73c","ytt":"xjTlNTbv-xs"},{"id":"tt6304046","title":"Thelma","aka":[],"year":2017,"cats":["thelema"],"genres":["Drama","Fantasia","Mistério","Terror"],"countries":["Dinamarca","França","Noruega","Suécia"],"directors":["Joachim Trier"],"cast":"Eili Harboe, Kaya Wilkins","kind":null,"tr":"/_blob/27875474b27763aed4856997b2c6443f","ytt":"vgQMHG9SGlU"},{"id":"r216","title":"Conjuration","aka":[],"year":2017,"cats":["thelema"],"genres":["Terror","Suspense"],"countries":[],"directors":[],"cast":null,"kind":null},{"id":"tt0065641","title":"Dionysus in '69","aka":["Dionysus"],"year":1970,"cats":["thelema"],"genres":["Drama"],"countries":["Estados Unidos"],"directors":["Brian De Palma","Richard Schechner"],"cast":"Remi Barclay, Samuel Blazer","kind":null,"tr":"/_blob/141e60574fb3be7b2849dfc99e1907ed","ytt":"92pUMdG9KHY"},{"id":"tt0107664","title":"Necronomicon","aka":["Necronomicon: O Livro Proibido dos Mortos","Necronomicon: Book of Dead"],"year":1993,"cats":["thelema"],"genres":["Terror"],"countries":["Estados Unidos","França"],"directors":["Brian Yuzna","Christophe Gans","Shūsuke Kaneko"],"cast":"Jeffrey Combs, Tony Azito","kind":null,"tr":"/_blob/bf52c28201b44e6f6ef55ebb89fe6056","ytt":"RvYXx3TQYpU"},{"id":"tt0062032","title":"Necronomicon","aka":["Succubus","Necronomicon - Geträumte Sünden","Les Yeux Verts du Diable","Delirium"],"year":1968,"cats":["thelema"],"genres":["Terror","Thriller"],"countries":["Alemanha"],"directors":["Jesús Franco"],"cast":"Janine Reynaud, Jack Taylor","kind":null,"tr":"/_blob/fb91caf9f31e8fcd20e5659df5525964","ytt":"uqNCPHzuogc"},{"id":"tt0974536","title":"Chemical Wedding","aka":["Bruce Dickinson Presents: Crowley"],"year":2008,"cats":["thelema"],"genres":["Suspense","Terror"],"countries":["Reino Unido"],"directors":["Julian Doyle"],"cast":"Simon Callow, Kal Weber","kind":null,"tr":"/_blob/e88a87880ac4b6fbf217fecc9b52f265","ytt":"ovsn7Gn3XiU"},{"id":"tt0062885","title":"The Devil Rides Out","aka":["As Bodas de Satã"],"year":1968,"cats":["thelema"],"genres":["Terror"],"countries":["Estados Unidos","Reino Unido"],"directors":["Terence Fisher"],"cast":"Christopher Lee, Charles Gray","kind":null,"tr":"/_blob/85a64bdb89ea83def3d383f56a1a8ad5","ytt":"DTRWmqHEe7g"},{"id":"tt0047114","title":"Inauguration of the Pleasure Dome","aka":[],"year":1954,"cats":["thelema"],"genres":["Experimental","Fantasia","Terror"],"countries":["Estados Unidos"],"directors":["Kenneth Anger"],"cast":"Samson De Brier, Marjorie Cameron","kind":"Curta","tr":"/_blob/4cafe78c38b945af987c1672aafd31fd","ytt":"GxVbqDy64ss"},{"id":"r223","title":"Aleister Crowley: The Wickedest Man in the World","aka":[],"year":2002,"cats":["thelema"],"genres":["Biografia","Documentário"],"countries":[],"directors":[],"cast":null,"kind":null},{"id":"tt0007107","title":"The Mysteries of Myra","aka":[],"year":1916,"cats":["thelema"],"genres":["Drama","Fantasia","Mistério","Terror"],"countries":["Estados Unidos"],"directors":["Theodore Wharton","Leopold Wharton"],"cast":"Jean Sothern, Howard Estabrook","kind":null,"tr":"/_blob/9f2528895595de77f438fb340402053d","ytt":"Hw9rH10Ug2s"},{"id":"tt0947072","title":"Sex: The Secret Gate to Eden","aka":["Sexo: O Portão Secreto para o Éden"],"year":2006,"cats":["thelema"],"genres":["Documentário"],"countries":["Estados Unidos"],"directors":[],"cast":"","kind":"Vídeo"},{"id":"tt0010323","title":"Das Kabinett des Doktor Caligari","aka":["O Gabinete do Dr. Caligari","The Cabinet of Dr. Caligari"],"year":1920,"cats":["thelema"],"genres":["Terror"],"countries":["Alemanha"],"directors":["Robert Wiene"],"cast":"Werner Krauss, Conrad Veidt","kind":null,"tr":"/_blob/dbfebe6c4a18376919807ccd06401d39","ytt":"hSzvBw7Dh5I"},{"id":"tt0021331","title":"Le Sang d'un poète","aka":["O Sangue de um Poeta","The Blood of a Poet"],"year":1932,"cats":["thelema"],"genres":["Drama","Experimental","Fantasia"],"countries":["França"],"directors":["Jean Cocteau"],"cast":"Enrique Rivero, Lee Miller","kind":null,"tr":"/_blob/14b316260ccb77a12af57f116547d000","ytt":"OX-xmGo3E58"},{"id":"tt0034587","title":"Cat People","aka":["Sangue de pantera"],"year":1942,"cats":["thelema"],"genres":["Mistério","Terror","Thriller"],"countries":["Estados Unidos"],"directors":["Jacques Tourneur"],"cast":"Simone Simon, Tom Conway","kind":null,"tr":"/_blob/35dad736f02be381ec7d577e1efe9602","ytt":"0ADPSaybusM"},{"id":"tt0064493","title":"Invocation of My Demon Brother","aka":[],"year":1969,"cats":["thelema"],"genres":["Experimental","Música","Terror"],"countries":["Estados Unidos"],"directors":["Kenneth Anger"],"cast":"Kenneth Anger, Bobby Beausoleil","kind":"Curta","tr":"/_blob/d17acf6126d3160428e9ea82c8344ff2","ytt":"TkjQ8JKwIkY"},{"id":"tt0076240","title":"Jubilee","aka":["Magnicídio"],"year":1978,"cats":["thelema"],"genres":["Experimental","Música","Drama","Comédia"],"countries":["Reino Unido"],"directors":["Derek Jarman"],"cast":"Adam Ant, Richard O'Brien","kind":null,"tr":"/_blob/19a0c45440e6fdf43f13ab3c9c26a0ef","ytt":"V3p_aJhUQMw"},{"id":"tt0398191","title":"Maybe Logic: The Lives and Ideas of Robert Anton Wilson","aka":[],"year":2003,"cats":["thelema"],"genres":["Biografia","Documentário"],"countries":["Estados Unidos"],"directors":[],"cast":"Robert Anton Wilson, Scott Apel","kind":"Vídeo","tr":"/_blob/4df5ed73f6194de2b58a89acf2f24f91","ytt":"Vep3b2Wi8Bc"},{"id":"tt2375574","title":"A Field in England","aka":[],"year":2013,"cats":["thelema"],"genres":["Drama","História","Thriller"],"countries":["Reino Unido"],"directors":["Ben Wheatley"],"cast":"Julian Barratt, Peter Ferdinando","kind":null,"tr":"/_blob/a66c567a53fc8c447102417c4d69c48f","ytt":"cRRvzjkzu2U"},{"id":"tt1009011","title":"Abbey of Thelema","aka":["Abadia de Thelema"],"year":2007,"cats":["thelema"],"genres":["Biografia","Comédia","Drama"],"countries":[],"directors":["J. Grimm","Vincent Jennings"],"cast":"Mike Ketcher, Lynn Mastio Rice","kind":null,"tr":"/_blob/2e84cd24878b458d9bee2aac5e782e76","ytt":"wLTxa642TWw"},{"id":"tt7210448","title":"Strange Angel","aka":[],"year":2018,"cats":["thelema"],"genres":["Biografia","Drama"],"countries":[],"directors":["David Lowery"],"cast":"Jack Reynor, Bella Heathcote","kind":"Série","tr":"/_blob/b12c1c1a1e94e307d937c51acc6afcbf","ytt":"yaTxH79EaQg"},{"id":"tt0468833","title":"Perdurabo","aka":[],"year":2003,"cats":["thelema"],"genres":["Biografia"],"countries":[],"directors":[],"cast":"Toni Arteaga, Neus Bernaus","kind":"Curta","tr":"/_blob/6948cae0f2443591ced2b733b00ead36","ytt":"WejzKXDYubQ"},{"id":"tt2778268","title":"Aleister Crowley: Legend of the Beast","aka":[],"year":2013,"cats":["thelema"],"genres":["Biografia","Drama"],"countries":[],"directors":[],"cast":"Matthew Sheppard, Val Monk","kind":null,"tr":"/_blob/e4d1ad35d3d31210e77cf82e0cff129c","ytt":"0l-biwANeFs"},{"id":"r237","title":"Thelema","aka":[],"year":2008,"cats":["thelema"],"genres":["Terror","Suspense"],"countries":[],"directors":[],"cast":null,"kind":null},{"id":"tt0073044","title":"Giger's Necronomicon","aka":[],"year":1975,"cats":["thelema"],"genres":["Documentário","Terror"],"countries":["Suiça"],"directors":[],"cast":"H.R. Giger","kind":"Curta","tr":"/_blob/3527b3f16f81ce45f76a1f2c46b472a5","ytt":"DL7KgGX0iOc"},{"id":"tt6833654","title":"The 7th Night of Thelema: A Virtual Ritual","aka":[],"year":2017,"cats":["thelema"],"genres":["Terror"],"countries":[],"directors":[],"cast":"Inko di Ö, Cheryl Ita","kind":"Curta","tr":"/_blob/6185bb71fec84ee9ef64f8f49e90121d","ytt":"KU8DMz5vtT0"},{"id":"tt3030920","title":"The Wormwood Star","aka":[],"year":1956,"cats":["thelema"],"genres":["Documentário"],"countries":["Estados Unidos"],"directors":[],"cast":"Marjorie Cameron","kind":"Curta","tr":"/_blob/ecd167f1a80dbcc1d55e23004b64adda","ytt":"hqYC-QMffuM"},{"id":"tt3948158","title":"The Power of the Witch: Real or Imaginary?","aka":[],"year":1971,"cats":["thelema"],"genres":["Documentário"],"countries":["Reino Unido"],"directors":[],"cast":"Michael Bakewell, Doreen Edith Dominy Valiente","kind":"Telefilme"},{"id":"tt0488757","title":"Legend of the Witches","aka":[],"year":1970,"cats":["thelema"],"genres":["Documentário"],"countries":["Reino Unido"],"directors":[],"cast":"Alex Sanders, Maxine Sanders","kind":null,"tr":"/_blob/79e142ba97a7710522c32a181d5bc8e0","ytt":"NmIUkTDB1AU"},{"id":"tt0225233","title":"The Burning Times","aka":[],"year":1990,"cats":["thelema"],"genres":["Documentário"],"countries":["Canadá"],"directors":["Donna Read"],"cast":"Martha Henry, Barbara Pecarich","kind":null,"tr":"/_blob/e0e0c1ab53179f4175cbff82798c1510","ytt":"yaexS7Dvz44"},{"id":"tt0066577","title":"Angeli bianchi... angeli neri","aka":["White Angel... Black Angel","Witchcraft '70"],"year":1970,"cats":["thelema"],"genres":["Documentário"],"countries":["Itália"],"directors":["Luigi Scattini","Lee Frost"],"cast":"Alberto Bevilacqua, Will Geer","kind":null,"tr":"/_blob/4be8018b71dd5bea118918dae7837f0f","ytt":"kX0rCWkqHV4"},{"id":"tt0270635","title":"Scream Greats, Vol. 2: Satanism and Witchcraft","aka":["Scream Greats, Vol. 2: Satanismo e Bruxaria"],"year":1986,"cats":["thelema"],"genres":["Documentário"],"countries":[],"directors":[],"cast":"Annette, Harvey Bernhard","kind":null,"tr":"/_blob/f4a282250e41b58c70abe7507318c842","ytt":"8axubcnY3oA"},{"id":"tt8391578","title":"Secrets of the Occult","aka":["Segredos do Ocultismo"],"year":2007,"cats":["thelema"],"genres":["Documentário"],"countries":["Estados Unidos"],"directors":[],"cast":"John Cullum, Vilayanur Ramachandran","kind":"Minissérie","tr":"/_blob/559d6f32fb6c1eb214c9b813b2c9a67f","ytt":"vJdBnQeiTfI"},{"id":"tt0309940","title":"The Occult Experience","aka":[],"year":1985,"cats":["thelema"],"genres":["Documentário"],"countries":[],"directors":["Frank Heimans"],"cast":"Margot Adler, Michael Aquino","kind":null,"tr":"/_blob/2efcb54764f4634a23cec3c0b9edbbb0","ytt":"DBahfgSPFno"},{"id":"r248","title":"Rasputin: The Devil in the Flesh","aka":[],"year":2002,"cats":["thelema"],"genres":["Documentário"],"countries":[],"directors":[],"cast":null,"kind":null},{"id":"tt1226752","title":"The Dunwich Horror","aka":["Bruxas"],"year":2009,"cats":["thelema"],"genres":["Suspense","Terror"],"countries":["Estados Unidos"],"directors":["Leigh Scott"],"cast":"Sarah Lieving, Griff Furst","kind":"Telefilme"},{"id":"tt5119116","title":"Pyewacket","aka":["Pyewacket: Entidade Maligna"],"year":2017,"cats":["thelema"],"genres":["Terror","Thriller"],"countries":["Canadá"],"directors":["Adam MacDonald"],"cast":"Laurie Holden, Nicole Muñoz","kind":null,"tr":"/_blob/95b85725cf371c9d8f6e3f2e228e2794","ytt":"-bbtAKNi_j8"}];
+const CATS = [{"id":"weird","name":"Weird Movies","color":"#e86bb3","desc":"Estranhezas de culto: comédias de terror espanholas, musicais de ficção científica, palhaços do espaço e ninjas noruegueses."},{"id":"mundo","name":"Weird pelo mundo","color":"#3fc2b0","desc":"Raridades de dezenas de países, da animação húngara ao experimental grego. Muitas estão completas no YouTube."},{"id":"mindfuck","name":"Mindfuck","color":"#9b8cff","desc":"Filmes que dobram a realidade, o tempo e a cabeça de quem assiste. Separados por gênero na planilha original."},{"id":"horror","name":"Pleasing Horror","color":"#ef5a4f","desc":"Terror bonito de ver: bruxas em technicolor, lobos de conto de fadas e gêmeos de Cronenberg."},{"id":"thelema","name":"Thelema, Magia e Ocultismo","color":"#d9b54a","desc":"Crowley, Kenneth Anger, bruxaria, Lovecraft e documentários sobre o oculto."}];
+</script>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from "three";
+import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
+import {CSS3DRenderer, CSS3DObject} from "three/addons/renderers/CSS3DRenderer.js";
+import {MeshoptDecoder} from "three/addons/libs/meshopt_decoder.module.js";
+import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
+
+const $ = id => document.getElementById(id);
+const V3 = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
+const norm = s => (s||"").toString().normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const esc = s => (s??"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const hueOf = s => [...s].reduce((h,c)=>(h*31+c.charCodeAt(0))%360,7);
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
+const css = getComputedStyle(document.documentElement);
+const catColor = id => css.getPropertyValue("--c-"+id).trim() || CAT[id].color;
+const BY_ID = Object.fromEntries(MOVIES.map(m=>[m.id,m]));
+MOVIES.forEach(m=>{ m.hay=norm([m.title,...m.aka,m.year,...m.directors,...m.countries,m.cast].join(" ")); });
+// mesma regra do catálogo: fora do Artifact os /_blob/ não existem e o trailer vem do YouTube
+const EMBED = location.protocol==="file:" || location.hostname.endsWith("github.io") || ["localhost","127.0.0.1"].includes(location.hostname);
+const hasTrailer = m => EMBED ? !!m.ytt : !!m.tr;
+const searchURL = m => `https://www.youtube.com/results?search_query=${encodeURIComponent(m.title+" "+(m.year||"")+" trailer")}`;
+
+// ---- Ajustes da cena: site/modelos/cena.json sobrescreve estes valores ----
+// largura em metros; rot em graus (aplicada antes de medir); as frações são relativas à caixa do modelo já ajustado
+const CENA_PADRAO = {
+  estante: {arquivo:"estante.glb", largura:0.9, altura:1.5, rot:[0,0,0], prateleiras:null},
+  bancada: {arquivo:"bancada.glb", largura:1.0, rot:[0,0,0], topo:null},
+  vcr:     {arquivo:"vcr.glb", largura:0.43, rot:[0,0,0], boca:{x:0.36,y:0.62}, visor:{x:0.74,y:0.55,largura:0.1}},
+  tv:      {arquivo:"tv.glb", largura:0.56, rot:[0,0,0], tela:{x:0.44,y:0.55,largura:0.62,z:0.004}},
+  fita:    {arquivo:"fita.glb", largura:0.187, rot:[0,0,0]}
+};
+const getJSON = u => fetch(u).then(r=>r.ok?r.json():null).catch(()=>null);
+const merge = (a,b) => { if(!b) return a; for(const k in b) a[k] = (b[k] && typeof b[k]==="object" && !Array.isArray(b[k]) && a[k]) ? merge({...a[k]},b[k]) : b[k]; return a; };
+
+// ---- Renderização ----
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas:$("gl"), antialias:true, alpha:true}); }
+catch(e){ $("nogl").hidden=false; $("loading").classList.add("done"); throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setClearColor(0x000000,0);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+const cssR = new CSS3DRenderer(); $("css3d").appendChild(cssR.domElement);
+const scene = new THREE.Scene(), cssScene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x07060a, 4, 9);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 40);
+const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+const LOADED = [];
+async function loadModel(c, key){
+  try { const g = await loader.loadAsync("modelos/"+c.arquivo); LOADED.push(key); return g.scene; }
+  catch(_){ return null; }
+}
+// gira, escala pela largura e põe a origem no centro da base; devolve o grupo e o tamanho final
+function fit(obj, c){
+  obj.rotation.set(...c.rot.map(d=>d*Math.PI/180));
+  obj.updateMatrixWorld(true);
+  let b = new THREE.Box3().setFromObject(obj);
+  obj.scale.multiplyScalar(c.largura/(b.max.x-b.min.x));
+  obj.updateMatrixWorld(true);
+  b = new THREE.Box3().setFromObject(obj);
+  const ctr = b.getCenter(V3());
+  obj.position.sub(V3(ctr.x, b.min.y, ctr.z));
+  obj.traverse(o=>{ if(o.isMesh){ o.castShadow=o.receiveShadow=false; } });
+  const g = new THREE.Group(); g.add(obj);
+  return {group:g, size:b.getSize(V3())};
+}
+
+// ---- Texturas desenhadas em canvas ----
+function canvasTex(w,h,draw,repeat){
+  const c=document.createElement("canvas"); c.width=w; c.height=h; draw(c.getContext("2d"),w,h);
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8;
+  if(repeat){ t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(...repeat); }
+  return t;
+}
+const noise = (g,w,h,n,a) => { for(let i=0;i<n;i++){ g.fillStyle=`rgba(${Math.random()<.5?"0,0,0":"255,255,255"},${Math.random()*a})`; g.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*2,1+Math.random()*2); } };
+const woodTex = (base="#5a3a22") => canvasTex(512,512,(g,w,h)=>{
+  g.fillStyle=base; g.fillRect(0,0,w,h);
+  for(let y=0;y<h;y+=2){ g.fillStyle=`rgba(0,0,0,${.08+.12*Math.abs(Math.sin(y*.05+Math.sin(y*.013)*3))})`; g.fillRect(0,y,w,1+Math.random()); }
+  noise(g,w,h,2500,.08);
+},[2,1]);
+
+// ---- Sala ----
+function buildRoom(W, bx){
+  const span = bx+3;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(span+6, 8), new THREE.MeshStandardMaterial({roughness:.95, map:canvasTex(256,256,(g,w,h)=>{
+    g.fillStyle="#2a0f18"; g.fillRect(0,0,w,h);
+    // carpete de locadora: confete geométrico
+    const cols=["#5b1e33","#1c3b52","#4d3b12","#3a1c4f"];
+    for(let i=0;i<70;i++){ g.fillStyle=cols[i%4]; g.save(); g.translate(Math.random()*w,Math.random()*h); g.rotate(Math.random()*6); g.fillRect(-6,-1.5,12,3); g.restore(); }
+    noise(g,w,h,3000,.12);
+  },[(span+6)*1.5, 12])}));
+  floor.rotation.x=-Math.PI/2; floor.position.set(span/2-1.5, 0, 2);
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(span+6, 4), new THREE.MeshStandardMaterial({roughness:.9, map:canvasTex(256,256,(g,w,h)=>{
+    g.fillStyle="#13202a"; g.fillRect(0,0,w,h);
+    for(let x=0;x<w;x+=32){ g.fillStyle="#182a36"; g.fillRect(x,0,14,h); g.fillStyle="#0e1820"; g.fillRect(x+14,0,2,h); }
+    noise(g,w,h,2000,.06);
+  },[(span+6)*2.2, 4*2.2])}));
+  wall.position.set(span/2-1.5, 2, -0.09);
+  // rodapé
+  const skirt = new THREE.Mesh(new THREE.BoxGeometry(span+6,.1,.02), new THREE.MeshStandardMaterial({color:0x1a1210, roughness:.6}));
+  skirt.position.set(span/2-1.5,.05,-0.075);
+  scene.add(floor, wall, skirt);
+
+  // letreiro de neon sobre a estante
+  const neon = new THREE.Mesh(new THREE.PlaneGeometry(1.6,.24), new THREE.MeshBasicMaterial({transparent:true, toneMapped:false, map:canvasTex(1024,154,(g,w,h)=>{
+    g.font='900 104px "Big Shoulders Display"'; g.textAlign="center"; g.textBaseline="middle";
+    g.shadowColor="#ff3d9a"; g.shadowBlur=28; g.strokeStyle="#ff7cc0"; g.lineWidth=6;
+    for(let i=0;i<3;i++) g.strokeText("LOCADORA ESTRANHA", w/2, h/2+6);
+    g.shadowBlur=0; g.fillStyle="#ffe6f3"; g.fillText("LOCADORA ESTRANHA", w/2, h/2+6);
+  })}));
+  neon.position.set(Math.min(W/2, 1.2), 0, -0.07);
+  const neonL = new THREE.PointLight(0xff3d9a, .7, 2.4, 2);
+  // "VÍDEO" em azul sobre a bancada
+  const vid = new THREE.Mesh(new THREE.PlaneGeometry(.7,.2), new THREE.MeshBasicMaterial({transparent:true, toneMapped:false, map:canvasTex(512,146,(g,w,h)=>{
+    g.font='italic 900 112px "Big Shoulders Display"'; g.textAlign="center"; g.textBaseline="middle";
+    g.shadowColor="#2fd5ff"; g.shadowBlur=26; g.strokeStyle="#7fe6ff"; g.lineWidth=5;
+    for(let i=0;i<3;i++) g.strokeText("VÍDEO", w/2, h/2+4);
+    g.shadowBlur=0; g.fillStyle="#e6fbff"; g.fillText("VÍDEO", w/2, h/2+4);
+  })}));
+  vid.position.set(bx, 1.62, -0.07);
+  const vidL = new THREE.PointLight(0x2fd5ff, .9, 2.2, 2); vidL.position.set(bx, 1.62, .25);
+  scene.add(neon, neonL, vid, vidL);
+  return {neon, neonL};
+}
+
+// ---- Estante ----
+const TAPE = {w:.026, h:.19, d:.105}, GAP = .0016, ROW_H = .27, BOARD = .018, BASE = .09, PAD = .07;
+let ROWS = [];       // [{cat, y, items:[movie]}]
+const TAPES = [];    // meshes na estante
+const SLOT_W = 64, SLOT_H = 512;
+
+function drawSpine(g, ox, oy, m, cat){
+  const hue=hueOf(m.title), col=catColor(cat);
+  g.save(); g.translate(ox,oy);
+  g.fillStyle=`hsl(${hue} ${22+hue%30}% ${10+hue%9}%)`; g.fillRect(0,0,SLOT_W,SLOT_H);
+  // desgaste do papelão
+  for(let i=0;i<40;i++){ g.fillStyle=`rgba(255,255,255,${Math.random()*.05})`; g.fillRect(Math.random()*SLOT_W,Math.random()*SLOT_H,1+Math.random()*3,2+Math.random()*24); }
+  g.fillStyle=col; g.fillRect(0,0,SLOT_W,58);
+  g.fillStyle="#120e0a"; g.font='900 30px "Big Shoulders Display"'; g.textAlign="center"; g.textBaseline="middle"; g.fillText("CE",SLOT_W/2,31);
+  g.fillStyle=col; g.fillRect(0,462,SLOT_W,4);
+  g.fillStyle="#f3ead2"; g.font='30px VT323'; g.fillText(m.year||"—",SLOT_W/2,490);
+  // título de baixo para cima, como nas lombadas brasileiras
+  g.translate(SLOT_W/2, 260); g.rotate(-Math.PI/2);
+  let t=m.title.toUpperCase(), fs=42;
+  for(;fs>18;fs-=2){ g.font=`900 ${fs}px "Big Shoulders Display"`; if(g.measureText(t).width<=380) break; }
+  while(g.measureText(t).width>380 && t.length>4) t=t.slice(0,-2).trimEnd()+"…";
+  g.fillStyle="#f3ead2"; g.fillText(t,0,3);
+  g.restore();
+}
+
+function buildAtlas(entries){
+  const cols = 2048/SLOT_W, rows = Math.ceil(entries.length/cols);
+  const c=document.createElement("canvas"); c.width=2048; c.height=rows*SLOT_H;
+  const g=c.getContext("2d");
+  entries.forEach((e,i)=>{ e.ox=(i%cols)*SLOT_W; e.oy=Math.floor(i/cols)*SLOT_H; drawSpine(g,e.ox,e.oy,e.m,e.cat); });
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8;
+  return {tex:t, w:c.width, h:c.height};
+}
+// a face +z da caixa é a lombada: aponta o UV dela para o pedaço certo do atlas
+function spineGeo(e, A){
+  const geo = new THREE.BoxGeometry(TAPE.w, TAPE.h, TAPE.d);
+  const uv = geo.attributes.uv;
+  for(let k=16;k<20;k++){ const u=uv.getX(k), v=uv.getY(k); uv.setXY(k, (e.ox+u*SLOT_W)/A.w, 1-(e.oy+(1-v)*SLOT_H)/A.h); }
+  return geo;
+}
+
+async function buildShelf(cfg){
+  // cada sessão é uma prateleira, de cima para baixo na ordem de sessions.json
+  ROWS = CATS.map(c=>({cat:c.id, items:MOVIES.filter(m=>m.cats.includes(c.id)).sort((a,b)=>norm(a.title).localeCompare(norm(b.title)))}));
+  const W = Math.max(1.6, PAD*2 + Math.max(...ROWS.map(r=>r.items.length))*(TAPE.w+GAP));
+  const n = ROWS.length, H = BASE + n*ROW_H + .03;
+  const glb = await loadModel(cfg, "estante");
+  if(glb && cfg.prateleiras){
+    // estante do Sketchfab repetida lado a lado; as alturas das tábuas vêm de cena.json
+    const unit = fit(glb, cfg);
+    const k = Math.ceil(W/unit.size.x);
+    for(let i=0;i<k;i++){ const u=i?unit.group.clone():unit.group; u.position.set(unit.size.x*(i+.5), 0, -0.01); scene.add(u); }
+    ROWS.forEach((r,i)=>r.y=cfg.prateleiras[i] ?? cfg.prateleiras.at(-1));
+    var Wf = k*unit.size.x, Hf = unit.size.y;
+  } else {
+    const wood = new THREE.MeshStandardMaterial({map:woodTex(), roughness:.7});
+    const dark = new THREE.MeshStandardMaterial({map:woodTex("#2c1d12"), roughness:.85});
+    const add = (geo,mat,x,y,z) => { const o=new THREE.Mesh(geo,mat); o.position.set(x,y,z); scene.add(o); };
+    add(new THREE.BoxGeometry(W,H,.012), dark, W/2, H/2, -0.066);
+    for(const x of [-.0125, W+.0125]) add(new THREE.BoxGeometry(.025,H,.15), wood, x, H/2, .005);
+    add(new THREE.BoxGeometry(W+.05,.03,.16), wood, W/2, H-.015, .005);
+    add(new THREE.BoxGeometry(W,BASE,.15), dark, W/2, BASE/2, .005);
+    ROWS.forEach((r,i)=>{ r.y = BASE + (n-1-i)*ROW_H; if(i<n-1) add(new THREE.BoxGeometry(W,BOARD,.15), wood, W/2, r.y-BOARD/2, .005); });
+    var Wf = W, Hf = H;
+  }
+  // lombadas
+  const entries = ROWS.flatMap(r=>r.items.map(m=>({m, cat:r.cat})));
+  // sem as fontes (rede ruim), as lombadas saem com a fonte de reserva
+  await Promise.all(['900 40px "Big Shoulders Display"','30px VT323'].map(f=>document.fonts.load(f).catch(()=>{})));
+  const A = buildAtlas(entries);
+  const spineMat = new THREE.MeshStandardMaterial({map:A.tex, roughness:.55});
+  const sideMat = new THREE.MeshStandardMaterial({color:0x1b1720, roughness:.6});
+  const edgeMat = new THREE.MeshStandardMaterial({color:0x2a2530, roughness:.8});
+  const mats = [sideMat, sideMat, edgeMat, edgeMat, spineMat, sideMat];
+  let ei = 0;
+  ROWS.forEach(r=>{
+    r.items.forEach((m,k)=>{
+      const e = entries[ei++];
+      const t = new THREE.Mesh(spineGeo(e,A), mats);
+      const jitter = (hueOf(m.id+r.cat)%7-3)*.0012;
+      t.position.set(PAD + k*(TAPE.w+GAP) + TAPE.w/2, r.y + TAPE.h/2, .0075 + jitter);
+      t.userData = {m, cat:r.cat, home:t.position.clone(), pull:0, goal:0};
+      TAPES.push(t); scene.add(t);
+    });
+    // etiqueta da prateleira, repetida a cada 1,4 m
+    const lab = canvasTex(512,64,(g,w,h)=>{
+      g.fillStyle=catColor(r.cat); g.fillRect(0,0,w,h);
+      g.fillStyle="#120e0a"; g.font='44px VT323'; g.textBaseline="middle";
+      g.fillText(CAT[r.cat].name.toUpperCase(),16,h/2+2);
+      g.textAlign="right"; g.fillText(r.items.length+" FITAS",w-16,h/2+2);
+    });
+    for(let x=.3; x<Math.max(.4,r.items.length*(TAPE.w+GAP)); x+=1.4){
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(.2,.025), new THREE.MeshBasicMaterial({map:lab, toneMapped:false}));
+      p.position.set(x, r.y-.0125, .0815); scene.add(p);
+    }
+  });
+  return {W:Wf, H:Hf, spineMat, A, entries};
+}
+
+// ---- Bancada, VCR, TV e fita (modelos do Sketchfab; sem eles, peças provisórias) ----
+const plastic = (c,r=.45,m=.1) => new THREE.MeshStandardMaterial({color:c, roughness:r, metalness:m});
+function fallbackBench(){
+  const g=new THREE.Group(), w=1.0, h=.55, d=.45, wood=new THREE.MeshStandardMaterial({map:woodTex("#3b2416"), roughness:.6});
+  const add=(geo,x,y,z)=>{ const o=new THREE.Mesh(geo,wood); o.position.set(x,y,z); g.add(o); };
+  add(new THREE.BoxGeometry(w,.035,d),0,h-.0175,0);
+  for(const x of [-w/2+.02,w/2-.02]) add(new THREE.BoxGeometry(.04,h-.035,d),x,(h-.035)/2,0);
+  add(new THREE.BoxGeometry(w-.08,.025,d-.04),0,.12,0);
+  add(new THREE.BoxGeometry(w-.08,h-.06,.015),0,h/2,-d/2+.01);
+  return {group:g, size:V3(w,h,d)};
+}
+function vfdTex(){
+  const c=document.createElement("canvas"); c.width=256; c.height=56;
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+  const draw=(txt, on)=>{ const g=c.getContext("2d"); g.fillStyle="#050a08"; g.fillRect(0,0,256,56);
+    g.font='46px VT323'; g.textBaseline="middle"; g.fillStyle=on?"#7dffcf":"#14302a"; g.shadowColor="#2bffb0"; g.shadowBlur=on?10:0;
+    g.fillText(txt||"--:--:--",12,30); t.needsUpdate=true; };
+  draw("",false); return {tex:t, draw};
+}
+function fallbackVCR(){
+  const g=new THREE.Group(), w=.43, h=.085, d=.30;
+  const body=new THREE.Mesh(new RoundedBoxGeometry(w,h,d,3,.006), plastic(0x2a2a2e,.38,.35)); body.position.y=h/2; g.add(body);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(w-.01,h-.01), new THREE.MeshStandardMaterial({roughness:.5, map:canvasTex(860,170,(c,W,H)=>{
+    c.fillStyle="#18181b"; c.fillRect(0,0,W,H);
+    c.fillStyle="#0c0c0e"; c.fillRect(60,30,440,62);           // boca da fita
+    c.strokeStyle="#333"; c.lineWidth=3; c.strokeRect(60,30,440,62);
+    c.fillStyle="#9a9aa2"; c.font='600 20px "Instrument Sans"'; c.fillText("VIDEO CASSETTE RECORDER",62,130);
+    c.font='700 16px "Instrument Sans"'; c.fillText("HQ  ·  4 HEAD  ·  STEREO",62,155);
+    ["◀◀","▶","▶▶","■","⏏"].forEach((s,i)=>{ c.fillStyle="#2c2c31"; c.fillRect(560+i*56,112,46,30); c.fillStyle="#bbb"; c.font='18px sans-serif'; c.textAlign="center"; c.fillText(s,583+i*56,133); c.textAlign="left"; });
+    noise(c,W,H,1500,.05);
+  })}));
+  face.position.set(0,h/2,d/2+.0005); g.add(face);
+  const flap=new THREE.Mesh(new THREE.BoxGeometry(.2,.03,.004), plastic(0x0d0d10,.4,.2));
+  const hinge=new THREE.Group(); hinge.position.set(-w/2+.01+(280/860)*(w-.01)-.0, h-(30/170)*(h-.01)-.005, d/2+.002); flap.position.y=-.015; hinge.add(flap); g.add(hinge);
+  const vfd=vfdTex();
+  const disp=new THREE.Mesh(new THREE.PlaneGeometry(.1,.022), new THREE.MeshBasicMaterial({map:vfd.tex, toneMapped:false}));
+  disp.position.set(w*.24, h*.62, d/2+.001); g.add(disp);
+  const slot=V3(hinge.position.x, hinge.position.y-.016, d/2);
+  return {group:g, size:V3(w,h,d), slot, flap:hinge, vfd};
+}
+function fallbackTV(){
+  const g=new THREE.Group(), w=.56, h=.46, d=.44;
+  const body=new THREE.Mesh(new RoundedBoxGeometry(w,h,d,4,.03), plastic(0x2b2622,.5,.05)); body.position.y=h/2; g.add(body);
+  // traseira do tubo, mais estreita
+  const back=new THREE.Mesh(new RoundedBoxGeometry(w*.7,h*.7,.18,3,.03), plastic(0x24201d,.6)); back.position.set(0,h*.48,-d/2-.06); g.add(back);
+  const bezel=new THREE.Mesh(new RoundedBoxGeometry(.43,.34,.02,3,.02), plastic(0x121111,.35)); bezel.position.set(-.05,h*.55,d/2); g.add(bezel);
+  // painel lateral: grade do alto-falante e botões
+  const panel=new THREE.Mesh(new THREE.PlaneGeometry(.085,.36), new THREE.MeshStandardMaterial({roughness:.6, map:canvasTex(96,400,(c,W,H)=>{
+    c.fillStyle="#1d1a17"; c.fillRect(0,0,W,H);
+    for(let y=200;y<390;y+=8) for(let x=10;x<W-6;x+=8){ c.fillStyle="#0a0908"; c.beginPath(); c.arc(x,y,2.4,0,7); c.fill(); }
+    c.fillStyle="#bdb5a6"; c.font='600 13px "Instrument Sans"'; c.fillText("COLOR",20,180);
+  })}));
+  panel.position.set(w/2-.06, h*.52, d/2+.001); g.add(panel);
+  for(const y of [.36,.3]){ const k=new THREE.Mesh(new THREE.CylinderGeometry(.016,.018,.02,24), plastic(0x8a8278,.4,.4)); k.rotation.x=Math.PI/2; k.position.set(w/2-.06,y,d/2+.01); g.add(k); }
+  const led=new THREE.Mesh(new THREE.CircleGeometry(.004,12), new THREE.MeshBasicMaterial({color:0x330000, toneMapped:false})); led.position.set(w/2-.06,.06,d/2+.001); g.add(led);
+  // antena de coelho
+  for(const s of [-1,1]){ const a=new THREE.Mesh(new THREE.CylinderGeometry(.0025,.0025,.42,8), plastic(0xb8b8b8,.25,.9)); a.position.set(s*.09,h+.19,-.05); a.rotation.z=-s*.5; g.add(a); }
+  const hub=new THREE.Mesh(new THREE.SphereGeometry(.03,16,12,0,Math.PI*2,0,Math.PI/2), plastic(0x1a1a1a)); hub.position.set(0,h,-.05); g.add(hub);
+  const screen={x:-.05, y:h*.55, w:.38, h:.285, z:d/2+.0115};
+  return {group:g, size:V3(w,h,d), screen, led};
+}
+function fallbackCassette(){
+  const g=new THREE.Group(), w=.187, h=.025, d=.103;
+  const shell=new THREE.Mesh(new RoundedBoxGeometry(w,h,d,2,.003), plastic(0x111113,.5)); g.add(shell);
+  const top=new THREE.Mesh(new THREE.PlaneGeometry(w-.01,d-.01), new THREE.MeshStandardMaterial({transparent:true, roughness:.4, map:canvasTex(374,186,(c,W,H)=>{
+    c.fillStyle="#f1ead8"; c.fillRect(20,10,W-40,52);
+    c.fillStyle="#2a2a2e"; c.fillRect(90,80,194,70);
+    for(const x of [140,234]){ c.fillStyle="#d8d2c4"; c.beginPath(); c.arc(x,115,22,0,7); c.fill(); c.fillStyle="#3a2a1c"; c.beginPath(); c.arc(x,115,12,0,7); c.fill(); }
+  })}));
+  top.rotation.x=-Math.PI/2; top.position.y=h/2+.0005; g.add(top);
+  const spineC=document.createElement("canvas"); spineC.width=512; spineC.height=68;
+  const spineT=new THREE.CanvasTexture(spineC); spineT.colorSpace=THREE.SRGBColorSpace;
+  const spine=new THREE.Mesh(new THREE.PlaneGeometry(w-.01,h-.006), new THREE.MeshStandardMaterial({map:spineT, roughness:.6}));
+  spine.position.z=d/2+.0005; g.add(spine);
+  const label=(m,cat)=>{ const c=spineC.getContext("2d"); c.fillStyle="#f1ead8"; c.fillRect(0,0,512,68); c.fillStyle=catColor(cat); c.fillRect(0,0,14,68);
+    c.fillStyle="#1a1410"; c.font='900 40px "Big Shoulders Display"'; c.textBaseline="middle"; let t=m.title.toUpperCase();
+    while(c.measureText(t).width>470 && t.length>4) t=t.slice(0,-2).trimEnd()+"…"; c.fillText(t,28,37); spineT.needsUpdate=true; };
+  return {group:g, size:V3(w,h,d), label};
+}
+
+let BENCH, VCR, TV, CAS, SCREEN, TVGLOW;
+async function buildBench(cena, x){
+  let glb = await loadModel(cena.bancada, "bancada");
+  BENCH = glb ? fit(glb, cena.bancada) : fallbackBench();
+  const top = cena.bancada.topo ?? BENCH.size.y;
+  BENCH.group.position.set(x, 0, .19); scene.add(BENCH.group);
+  const front = .19 + BENCH.size.z/2;
+
+  glb = await loadModel(cena.vcr, "vcr");
+  if(glb){
+    const f=fit(glb, cena.vcr), s=f.size, vfd=vfdTex();
+    const disp=new THREE.Mesh(new THREE.PlaneGeometry(cena.vcr.visor.largura*s.x, cena.vcr.visor.largura*s.x*.22), new THREE.MeshBasicMaterial({map:vfd.tex, toneMapped:false}));
+    disp.position.set((cena.vcr.visor.x-.5)*s.x, cena.vcr.visor.y*s.y, s.z/2+.002); f.group.add(disp);
+    VCR = {...f, vfd, slot:V3((cena.vcr.boca.x-.5)*s.x, cena.vcr.boca.y*s.y, s.z/2)};
+  } else VCR = fallbackVCR();
+  VCR.group.position.set(x, top, front-.04-VCR.size.z/2); scene.add(VCR.group);
+
+  glb = await loadModel(cena.tv, "tv");
+  if(glb){
+    const f=fit(glb, cena.tv), s=f.size, t=cena.tv.tela, sw=t.largura*s.x;
+    TV = {...f, screen:{x:(t.x-.5)*s.x, y:t.y*s.y, w:sw, h:sw*.75, z:s.z/2+t.z}};
+  } else TV = fallbackTV();
+  TV.group.position.set(x, top+VCR.size.y, VCR.group.position.z+VCR.size.z/2-.02-TV.size.z/2); scene.add(TV.group);
+
+  glb = await loadModel(cena.fita, "fita");
+  if(glb){ const f=fit(glb, cena.fita); f.group.children[0].position.y-=f.size.y/2; CAS={...f, label:()=>{}}; }
+  else CAS = fallbackCassette();
+  CAS.group.visible=false; scene.add(CAS.group);
+
+  // tela: um furo transparente no WebGL deixa ver o elemento CSS3D que fica atrás do canvas
+  const sc = TV.screen;
+  const hole = new THREE.Mesh(new THREE.PlaneGeometry(sc.w, sc.h), new THREE.MeshBasicMaterial({color:0, transparent:true, opacity:0, blending:THREE.NoBlending}));
+  hole.position.set(sc.x, sc.y, sc.z); TV.group.add(hole);
+  const obj = new CSS3DObject($("screenTpl").content.firstElementChild.cloneNode(true));
+  obj.scale.setScalar(sc.w/640);
+  TV.group.updateMatrixWorld(true);
+  obj.position.copy(hole.getWorldPosition(V3()));
+  cssScene.add(obj);
+  SCREEN = initScreen(obj.element);
+  TVGLOW = new THREE.PointLight(0x9fc4ff, 0, 2.2, 2);
+  TVGLOW.position.copy(hole.getWorldPosition(V3())).add(V3(0,0,.35)); scene.add(TVGLOW);
+  const lamp = new THREE.PointLight(0xffb36b, 2.2, 3.2, 2); lamp.position.set(x-.55, 1.5, .9); scene.add(lamp);
+  return {front, top};
+}
+const tvWorld = () => TV.group.localToWorld(V3(TV.screen.x, TV.screen.y, TV.screen.z));
+const slotWorld = () => VCR.group.localToWorld(VCR.slot.clone());
+
+// ---- Tela da TV ----
+function initScreen(el){
+  const q = s => el.querySelector(s);
+  const snow = q(".snow"), g = snow.getContext("2d"), img = g.createImageData(snow.width, snow.height), buf = new Uint32Array(img.data.buffer);
+  let raf = 0, bar = 0;
+  // chuvisco e barras de tracking, como no pen do Mobius1: alfa aleatório por pixel sobre o cinza
+  const frame = () => {
+    const W=snow.width, H=snow.height;
+    for(let i=0;i<buf.length;i++) buf[i] = ((255*Math.random())|0) << 24;
+    bar = (bar + 3) % (H+60);
+    for(let y=Math.max(0,bar-40); y<Math.min(H,bar); y++) for(let x=0;x<W;x++) if(Math.random()<.5) buf[y*W+x] = 0x30ffffff;
+    g.putImageData(img,0,0); raf = requestAnimationFrame(frame);
+  };
+  const osd = (txt, right) => { const o=q(".osd"); o.textContent=txt; o.classList.toggle("r",!!right); o.classList.add("show"); clearTimeout(osd.t); osd.t=setTimeout(()=>o.classList.remove("show"),2600); };
+  return {
+    async on(){ el.className="tvscreen on"; snow.classList.add("show"); cancelAnimationFrame(raf); frame(); await sleep(1200); },
+    play(m){
+      const pic=q(".pic");
+      if(!hasTrailer(m)) pic.innerHTML=`<div class="blue"><div>SEM SINAL</div><div style="font-size:30px">${esc(m.title.toUpperCase())}</div><a href="${searchURL(m)}" target="_blank" rel="noopener">PROCURAR TRAILER NO YOUTUBE</a></div>`;
+      else if(EMBED) pic.innerHTML=`<iframe title="Trailer de ${esc(m.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen src="https://www.youtube-nocookie.com/embed/${m.ytt}?autoplay=1&rel=0&playsinline=1&iv_load_policy=3&modestbranding=1"></iframe>`;
+      else { pic.innerHTML=`<video controls playsinline autoplay src="${m.tr}"></video>`; pic.querySelector("video").play().catch(()=>{}); }
+      el.classList.add("playing"); snow.classList.remove("show"); setTimeout(()=>cancelAnimationFrame(raf),700);
+      osd(hasTrailer(m)?"▶ PLAY":"CH 03");
+    },
+    async off(){ q(".pic").innerHTML=""; osd("■ STOP"); el.className="tvscreen turnoff"; await sleep(560); el.className="tvscreen"; cancelAnimationFrame(raf); snow.classList.remove("show"); }
+  };
+}
+
+// ---- Som (WebAudio): mecanismo do VCR e estalo da TV ----
+let AC=null, SOUND=true;
+try{ SOUND = localStorage.getItem("locadora-som")!=="0"; }catch(_){}
+const ac = () => { if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==="suspended") AC.resume(); return AC; };
+function noiseBuf(a, sec){ const b=a.createBuffer(1,a.sampleRate*sec,a.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; return b; }
+function sfx(kind){
+  if(!SOUND) return; const a=ac(), t=a.currentTime, out=a.createGain(); out.gain.value=.35; out.connect(a.destination);
+  const burst=(dur,freq,q,vol,at=0)=>{ const s=a.createBufferSource(); s.buffer=noiseBuf(a,dur); const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=freq; f.Q.value=q; const g=a.createGain(); g.gain.setValueAtTime(vol,t+at); g.gain.exponentialRampToValueAtTime(.001,t+at+dur); s.connect(f).connect(g).connect(out); s.start(t+at); };
+  const tone=(dur,f0,f1,type,vol,at=0)=>{ const o=a.createOscillator(); o.type=type; o.frequency.setValueAtTime(f0,t+at); o.frequency.exponentialRampToValueAtTime(f1,t+at+dur); const g=a.createGain(); g.gain.setValueAtTime(vol,t+at); g.gain.exponentialRampToValueAtTime(.001,t+at+dur); const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=900; o.connect(f).connect(g).connect(out); o.start(t+at); o.stop(t+at+dur); };
+  if(kind==="clunk"){ burst(.08,1800,1.5,1); tone(.18,120,50,"sine",.9); burst(.06,900,2,.8,.32); tone(.12,90,45,"sine",.7,.32); tone(1.1,70,95,"sawtooth",.12,.45); }
+  if(kind==="eject"){ tone(.6,95,60,"sawtooth",.12); burst(.07,1500,1.5,.9,.55); tone(.15,110,50,"sine",.8,.55); }
+  if(kind==="tvon"){ burst(.5,3200,.6,.5); tone(.25,60,40,"sine",.7); }
+  if(kind==="tvoff"){ tone(.3,300,40,"sine",.3); burst(.15,2500,.8,.3); }
+  if(kind==="pick"){ burst(.05,2400,3,.35); }
+}
+
+// ---- Câmera ----
+const view = {x:.9, y:1, d:1.3};            // estante: a câmera olha reto para a parede
+const cam = {pos:V3(.9,1,1.3), look:V3(.9,1,0)}, goal = {pos:V3(), look:V3()};
+let SHELF, BENCHINFO, BX;
+const vfov = () => camera.fov*Math.PI/180, hfov = () => 2*Math.atan(Math.tan(vfov()/2)*camera.aspect);
+const visH = d => 2*d*Math.tan(vfov()/2), visW = d => visH(d)*camera.aspect;
+function clampView(){
+  view.d = THREE.MathUtils.clamp(view.d, .42, 2.6);
+  view.x = THREE.MathUtils.clamp(view.x, -.3, BX+.4);
+  view.y = THREE.MathUtils.clamp(view.y, .3, Math.max(.3, SHELF.H-.12));
+}
+function shelfGoal(){ clampView(); goal.pos.set(view.x, view.y+.03, view.d); goal.look.set(view.x, view.y, 0); }
+// distância para enquadrar uma caixa w×h
+const fitDist = (w,h,m=1.12) => Math.max(h*m/2/Math.tan(vfov()/2), w*m/2/Math.tan(hfov()/2));
+function benchGoal(){
+  const s=tvWorld(), y=(BENCHINFO.top+TV.group.position.y+TV.size.y)/2 + .05;
+  const d=fitDist(1.15, TV.size.y+VCR.size.y+.35);
+  goal.pos.set(BX, y+.12, BENCHINFO.front+d); goal.look.set(BX, y, s.z);
+}
+let close=true;
+function watchGoal(){
+  const s=tvWorld();
+  if(!close) return benchGoal();
+  const d=fitDist(TV.screen.w, TV.screen.h, camera.aspect<1?1.04:1.18);
+  goal.pos.set(s.x, s.y, s.z+d); goal.look.copy(s);
+}
+
+// ---- Interações ----
+let mode="loading";  // shelf | held | busy | tv
+const ray=new THREE.Raycaster(), ptr=new THREE.Vector2();
+let hovered=null, held=null, shelfSaved=null;
+const setMode = m => { mode=m; document.body.className=m; };
+function pick(x,y,list){ ptr.set(x/innerWidth*2-1, -(y/innerHeight)*2+1); ray.setFromCamera(ptr,camera); return ray.intersectObjects(list,true)[0]; }
+
+function hover(t){
+  if(hovered===t) return;
+  if(hovered) hovered.userData.goal = hovered.userData.match?.03:0;
+  hovered=t; $("gl").classList.toggle("point",!!t);
+  if(t){ t.userData.goal=.05; const {m,cat}=t.userData; const tip=$("tip");
+    tip.style.setProperty("--dot",catColor(cat)); tip.innerHTML=`<b>${esc(m.title)}</b><span>${m.year||""} · ${esc(CAT[cat].name)}</span>`; tip.hidden=false; }
+  else $("tip").hidden=true;
+}
+
+// capa (face +x) e contracapa (face −x) da caixa na mão
+let POSTERS={};
+function coverTex(m, cat){
+  return canvasTex(512,926,(g,w,h)=>{
+    const col=catColor(cat), hue=hueOf(m.title);
+    g.fillStyle=`hsl(${hue} 30% 12%)`; g.fillRect(0,0,w,h);
+    const finish=()=>{
+      g.fillStyle="#000a"; g.fillRect(0,0,w,74); g.fillStyle=col; g.fillRect(0,70,w,6);
+      g.fillStyle="#f3ead2"; g.font='900 46px "Big Shoulders Display"'; g.textBaseline="middle"; g.fillText("VHS",22,38);
+      g.font='30px VT323'; g.textAlign="right"; g.fillText("CINEMATECA ESTRANHA VÍDEO",w-20,40); g.textAlign="left";
+      g.fillStyle="#000c"; g.fillRect(0,h-150,w,150); g.fillStyle=col; g.fillRect(0,h-150,w,5);
+      g.fillStyle="#f3ead2"; let fs=60, t=m.title.toUpperCase();
+      for(;fs>26;fs-=2){ g.font=`900 ${fs}px "Big Shoulders Display"`; if(g.measureText(t).width<=w-44) break; }
+      while(g.measureText(t).width>w-44 && t.length>4) t=t.slice(0,-2).trimEnd()+"…";
+      g.fillText(t,22,h-96); g.font='30px VT323'; g.fillStyle=col; g.fillText([m.year,m.countries[0]].filter(Boolean).join(" · ").toUpperCase(),22,h-44);
+    };
+    finish();
+  });
+}
+function backTex(m, cat){
+  return canvasTex(512,926,(g,w,h)=>{
+    const col=catColor(cat); g.fillStyle="#141019"; g.fillRect(0,0,w,h);
+    g.fillStyle=col; g.fillRect(0,0,w,8);
+    g.fillStyle="#f3ead2"; g.font='900 44px "Big Shoulders Display"'; g.textBaseline="top";
+    const wrap=(txt,x,y,maxW,lh)=>{ let line=""; for(const word of txt.split(" ")){ if(g.measureText(line+word).width>maxW&&line){ g.fillText(line.trim(),x,y); y+=lh; line=""; } line+=word+" "; } g.fillText(line.trim(),x,y); return y+lh; };
+    let y=wrap(m.title.toUpperCase(),28,40,w-56,46)+10;
+    g.font='30px VT323'; g.fillStyle=col; g.fillText("SESSÃO "+CAT[cat].name.toUpperCase(),28,y); y+=50;
+    const row=(k,v)=>{ if(!v) return; g.fillStyle="#a39bb0"; g.font='28px VT323'; g.fillText(k,28,y); g.fillStyle="#efe9dc"; g.font='500 24px "Instrument Sans"'; y=wrap(v,170,y+2,w-200,30)+8; };
+    row("DIREÇÃO",m.directors.join(", ")); row("ANO",String(m.year||"")); row("PAÍS",m.countries.join(", ")); row("GÊNERO",m.genres.join(", ")); row("ELENCO",m.cast);
+    // código de barras e selos
+    for(let x=28;x<230;x+=3+(hueOf(m.id+x)%3)){ g.fillStyle="#efe9dc"; g.fillRect(x,h-130,1+(hueOf(x+m.id)%3),70); }
+    g.font='26px VT323'; g.fillStyle="#efe9dc"; g.fillText(m.id.toUpperCase(),28,h-52);
+    g.strokeStyle="#efe9dc"; g.lineWidth=2; g.strokeRect(w-200,h-130,172,70); g.textAlign="center"; g.fillText("COLORIDO · NTSC",w-114,h-112); g.fillText("VHS HI-FI",w-114,h-84);
+  });
+}
+function makeHeld(t){
+  const {m,cat}=t.userData;
+  const cov=coverTex(m,cat);
+  const src=POSTERS[m.id];
+  if(src){ // a capa recebe o pôster quando a imagem carrega
+    const im=new Image(); im.onload=()=>{ const c=cov.image, g=c.getContext("2d"), w=c.width, h=c.height; const r=Math.max(w/im.width,(h-224)/im.height), iw=im.width*r, ih=im.height*r;
+      g.save(); g.beginPath(); g.rect(0,76,w,h-226); g.clip(); g.drawImage(im,(w-iw)/2,76+(h-226-ih)/2,iw,ih); g.restore(); cov.needsUpdate=true; }; im.src=src; }
+  const side=t.material[0], edge=t.material[2], spine=t.material[4];
+  const mesh=new THREE.Mesh(t.geometry, [new THREE.MeshStandardMaterial({map:cov,roughness:.4}), new THREE.MeshStandardMaterial({map:backTex(m,cat),roughness:.5}), edge, edge, spine, side]);
+  mesh.position.copy(t.getWorldPosition(V3())); mesh.quaternion.copy(t.quaternion);
+  scene.add(mesh); t.visible=false;
+  return {mesh, tape:t, m, cat, spin:0};
+}
+// frente da câmera, um pouco à esquerda (o cartão fica à direita); no celular, acima do cartão
+function heldSpot(){
+  const dir=V3(); camera.getWorldDirection(dir);
+  const p=camera.position.clone().add(dir.multiplyScalar(.42));
+  const narrow=innerWidth<720;
+  p.add(V3(narrow?0:-visW(.42)*.16, narrow?visH(.42)*.17:0, 0));
+  return p;
+}
+const qY = a => new THREE.Quaternion().setFromAxisAngle(V3(0,1,0),a);
+
+// tween simples com promessa
+const TW=new Set(); const ease=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const tween=(ms,fn,e=ease)=>new Promise(res=>TW.add({t0:performance.now(),ms,fn,e,res}));
+function moveObj(o, toPos, toQuat, ms, arc=0){
+  const p0=o.position.clone(), q0=o.quaternion.clone();
+  return tween(ms, k=>{ o.position.lerpVectors(p0,toPos,k); if(arc) o.position.y+=Math.sin(k*Math.PI)*arc; if(toQuat) o.quaternion.slerpQuaternions(q0,toQuat,k); });
+}
+
+async function select(t){
+  if(mode!=="shelf") return;
+  hover(null); sfx("pick");
+  shelfSaved={...view};
+  held=makeHeld(t); setMode("busy");
+  // a fita sai da estante na direção de quem olha antes de voar até a mão
+  await moveObj(held.mesh, held.mesh.position.clone().add(V3(0,0,.14)), null, 260);
+  await moveObj(held.mesh, heldSpot(), qY(-Math.PI/2), 520);
+  showCard(); setMode("held");
+}
+function showCard(){
+  const {m,cat}=held, card=$("card"), tr=hasTrailer(m);
+  card.style.setProperty("--dot",catColor(cat));
+  card.innerHTML=`<div class="kick">${esc(CAT[cat].name)}</div>
+    <h2>${esc(m.title)}</h2>${m.aka.length?`<div class="aka">${m.aka.map(esc).join(" · ")}</div>`:""}
+    <dl>${[["Ano",m.year],["Direção",m.directors.join(", ")],["País",m.countries.join(", ")],["Gênero",m.genres.join(", ")],["Elenco",m.cast]].filter(([,v])=>v).map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+    <div class="acts"><button class="chip primary" type="button" id="insert">▶ Pôr no VCR</button><button class="chip" type="button" id="putback">Devolver</button></div>
+    <div class="note">${tr?"Arraste a caixa para ver a contracapa.":"Esta fita não tem trailer gravado: a TV mostra só a tela azul."}</div>`;
+  card.hidden=false;
+  $("insert").onclick=insert; $("putback").onclick=putBack;
+  $("insert").focus({preventScroll:true});
+}
+async function putBack(){
+  if(mode!=="held") return;
+  $("card").hidden=true; setMode("busy");
+  const t=held.tape, home=t.getWorldPosition(V3());
+  await moveObj(held.mesh, home.clone().add(V3(0,0,.14)), t.quaternion, 480);
+  await moveObj(held.mesh, home, null, 220);
+  scene.remove(held.mesh); t.visible=true; held=null; setMode("shelf");
+}
+
+async function insert(){
+  if(mode!=="held") return;
+  const m=held.m; ac();
+  $("card").hidden=true; setMode("busy");
+  history.replaceState(null,"","#"+m.id);
+  benchGoal();
+  const slot=slotWorld(), side=VCR.group.localToWorld(V3(-VCR.size.x/2-.12, 0, 0));
+  // a caixa pousa em pé ao lado do VCR, com a capa para a frente
+  const stand=V3(side.x, BENCHINFO.top+TAPE.h/2, slot.z-.04);
+  await moveObj(held.mesh, stand, qY(-Math.PI/2), 1300, .25);
+  // a fita sai de dentro da caixa (deitada na caixa em pé = girada 90° em z)
+  CAS.label(m, held.cat);
+  const c=CAS.group; c.visible=true;
+  c.position.copy(stand); c.quaternion.copy(qY(-Math.PI/2)).multiply(new THREE.Quaternion().setFromAxisAngle(V3(0,0,1),Math.PI/2));
+  await tween(420, k=>{ c.position.y = stand.y + k*.2; });
+  const flat=new THREE.Quaternion();
+  await moveObj(c, slot.clone().add(V3(0,0,.16)), flat, 650, .05);
+  if(VCR.flap) tween(200,k=>VCR.flap.rotation.x=-k*1.3);
+  sfx("clunk");
+  await moveObj(c, slot.clone().add(V3(0,0,-.13)), null, 520);
+  c.visible=false;
+  if(VCR.flap) tween(160,k=>VCR.flap.rotation.x=-(1-k)*1.3);
+  startCounter();
+  await sleep(250);
+  sfx("tvon"); if(TV.led) TV.led.material.color.set(0xff2a1a);
+  glow=1; await SCREEN.on();
+  SCREEN.play(m);
+  close=true; watchGoal(); $("frame").textContent="Afastar";
+  setMode("tv"); $("watchbar").hidden=false; $("eject").focus({preventScroll:true});
+}
+async function eject(){
+  if(mode!=="tv") return;
+  setMode("busy"); $("watchbar").hidden=true;
+  history.replaceState(null,"",location.pathname+location.search);
+  sfx("tvoff"); glow=0; await SCREEN.off(); if(TV.led) TV.led.material.color.set(0x330000);
+  stopCounter("EJECT");
+  benchGoal(); await sleep(350);
+  sfx("eject");
+  const slot=slotWorld(), c=CAS.group, stand=held.mesh.position.clone();
+  if(VCR.flap) tween(200,k=>VCR.flap.rotation.x=-k*1.3);
+  c.visible=true; c.position.copy(slot).add(V3(0,0,-.13)); c.quaternion.identity();
+  await sleep(550);
+  await moveObj(c, slot.clone().add(V3(0,0,.16)), null, 480);
+  if(VCR.flap) tween(160,k=>VCR.flap.rotation.x=-(1-k)*1.3);
+  const inBox=qY(-Math.PI/2).multiply(new THREE.Quaternion().setFromAxisAngle(V3(0,0,1),Math.PI/2));
+  await moveObj(c, stand.clone().add(V3(0,.2,0)), inBox, 650, .05);
+  await tween(380, k=>{ c.position.y = stand.y + (1-k)*.2; });
+  c.visible=false; stopCounter("");
+  // de volta à estante, no mesmo lugar de onde saiu
+  Object.assign(view, shelfSaved); shelfGoal();
+  const t=held.tape, home=t.getWorldPosition(V3());
+  await moveObj(held.mesh, home.clone().add(V3(0,0,.14)), t.quaternion, 1300, .2);
+  await moveObj(held.mesh, home, null, 240);
+  scene.remove(held.mesh); t.visible=true; held=null; setMode("shelf");
+}
+
+// contador do VCR
+let counter=null;
+function startCounter(){ const t0=performance.now(); clearInterval(counter);
+  const tick=()=>{ const s=Math.floor((performance.now()-t0)/1000); VCR.vfd.draw("▶ "+Math.floor(s/3600)+":"+String(Math.floor(s/60)%60).padStart(2,"0")+":"+String(s%60).padStart(2,"0"), true); };
+  tick(); counter=setInterval(tick,500); }
+function stopCounter(txt){ clearInterval(counter); VCR.vfd.draw(txt, !!txt); }
+
+// ---- Ponteiro: arrastar anda pela estante (ou gira a caixa na mão); clique escolhe ----
+const P=new Map(); let down=null, pinch0=0;
+const gl=$("gl");
+gl.addEventListener("pointerdown", e=>{
+  gl.setPointerCapture(e.pointerId); P.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(P.size===2){ const [a,b]=[...P.values()]; pinch0=Math.hypot(a.x-b.x,a.y-b.y); down=null; return; }
+  down={x:e.clientX, y:e.clientY, vx:view.x, vy:view.y, spin:held?.spin, moved:false};
+});
+gl.addEventListener("pointermove", e=>{
+  if(P.has(e.pointerId)) P.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(P.size===2 && mode==="shelf"){ const [a,b]=[...P.values()], d=Math.hypot(a.x-b.x,a.y-b.y); if(pinch0){ view.d*=pinch0/d; pinch0=d; shelfGoal(); } return; }
+  if(down){
+    const dx=e.clientX-down.x, dy=e.clientY-down.y;
+    if(!down.moved && Math.hypot(dx,dy)>6){ down.moved=true; gl.classList.add("drag"); hover(null); }
+    if(down.moved && mode==="shelf"){ const k=visH(view.d)/innerHeight; view.x=down.vx-dx*k; view.y=down.vy+dy*k; shelfGoal(); }
+    if(down.moved && mode==="held") held.spin=down.spin+dx*.012;
+    return;
+  }
+  if(mode==="shelf" && e.pointerType==="mouse"){
+    const h=pick(e.clientX,e.clientY,TAPES); hover(h?.object||null);
+    const tip=$("tip"); tip.style.left=e.clientX+"px"; tip.style.top=e.clientY+"px";
+  }
+});
+const up=e=>{
+  P.delete(e.pointerId); if(P.size<2) pinch0=0;
+  gl.classList.remove("drag");
+  if(!down) return; const d=down; down=null; if(d.moved) return;
+  if(mode==="shelf"){ const h=pick(e.clientX,e.clientY,TAPES); if(h) select(h.object); }
+  else if(mode==="held"){
+    if(pick(e.clientX,e.clientY,[held.mesh])) return;
+    if(pick(e.clientX,e.clientY,[VCR.group])) return insert();
+    putBack();
+  }
+};
+gl.addEventListener("pointerup", up); gl.addEventListener("pointercancel", e=>{ P.delete(e.pointerId); down=null; });
+gl.addEventListener("pointerleave", ()=>{ if(!down) hover(null); });
+gl.addEventListener("wheel", e=>{
+  e.preventDefault(); if(mode!=="shelf") return;
+  if(e.ctrlKey) view.d*=Math.exp(e.deltaY*.01);
+  else { const k=visH(view.d)/innerHeight; view.x+=(e.deltaX+e.deltaY)*k*.9; }
+  shelfGoal();
+},{passive:false});
+const zoom=f=>{ if(mode!=="shelf") return; view.d*=f; shelfGoal(); };
+$("zin").onclick=()=>zoom(.8); $("zout").onclick=()=>zoom(1.25);
+addEventListener("keydown", e=>{
+  if(e.target.matches("input")){ if(e.key==="Escape"){ e.target.value=""; search(""); e.target.blur(); } return; }
+  if(e.key==="/"){ e.preventDefault(); $("q").focus(); return; }
+  if(e.key==="Escape"){ if(mode==="held") putBack(); else if(mode==="tv") eject(); return; }
+  if(mode!=="shelf") return;
+  const k=visW(view.d)*.25, s={ArrowLeft:[-k,0],ArrowRight:[k,0],ArrowUp:[0,ROW_H],ArrowDown:[0,-ROW_H]}[e.key];
+  if(s){ e.preventDefault(); view.x+=s[0]; view.y+=s[1]; shelfGoal(); }
+  if(e.key==="+"||e.key==="=") zoom(.8); if(e.key==="-") zoom(1.25);
+});
+$("eject").onclick=eject;
+$("frame").onclick=()=>{ close=!close; $("frame").textContent=close?"Afastar":"Aproximar"; watchGoal(); };
+$("sound").onclick=()=>{ SOUND=!SOUND; $("sound").setAttribute("aria-pressed",SOUND); try{ localStorage.setItem("locadora-som",SOUND?"1":"0"); }catch(_){} };
+$("sound").setAttribute("aria-pressed",SOUND);
+
+// prateleiras: cada aba leva ao começo da sua prateleira
+function goRow(cat){
+  const r=ROWS.find(r=>r.cat===cat); if(!r) return;
+  view.d=Math.min(view.d,1.3); view.y=r.y+TAPE.h/2+.02; view.x=visW(view.d)/2-.05; shelfGoal();
+  [...$("tabs").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===cat));
+}
+// busca: as fitas encontradas saem um pouco da estante; a lista leva até a fita
+function search(q){
+  const n=norm(q.trim()), res=$("results");
+  TAPES.forEach(t=>{ t.userData.match = !!n && t.userData.m.hay.includes(n); t.userData.goal = t===hovered?.05:t.userData.match?.03:0; });
+  if(!n){ res.hidden=true; return; }
+  const seen=new Set(), hits=TAPES.filter(t=>t.userData.match && !seen.has(t.userData.m.id) && seen.add(t.userData.m.id)).slice(0,8);
+  res.innerHTML = hits.length ? hits.map(t=>`<button type="button" data-t="${TAPES.indexOf(t)}" style="--dot:${catColor(t.userData.cat)}"><i></i><b>${esc(t.userData.m.title)}</b><span>${t.userData.m.year||""}</span></button>`).join("")
+    : `<button type="button" disabled><b>Nenhuma fita com esse nome</b></button>`;
+  res.hidden=false;
+}
+$("q").addEventListener("input", e=>search(e.target.value));
+$("q").addEventListener("keydown", e=>{ if(e.key==="Enter"){ const b=$("results").querySelector("[data-t]"); if(b) b.click(); } });
+$("results").addEventListener("click", async e=>{
+  const b=e.target.closest("[data-t]"); if(!b) return;
+  $("results").hidden=true; $("q").blur();
+  if(mode==="held") await putBack(); if(mode==="tv") await eject();
+  if(mode!=="shelf") return;
+  const t=TAPES[+b.dataset.t], p=t.userData.home;
+  view.d=Math.min(view.d,.9); view.x=p.x; view.y=p.y; shelfGoal();
+  await sleep(700); select(t);
+});
+document.addEventListener("pointerdown", e=>{ if(!e.target.closest(".search")) $("results").hidden=true; });
+
+$("creditsBtn").onclick=()=>$("credits").showModal();
+function credits(list){
+  const used=(list||[]).filter(c=>LOADED.includes(c.chave));
+  $("crBody").innerHTML = (used.length?`<ul>${used.map(c=>`<li><a href="${esc(c.link)}" target="_blank" rel="noopener">${esc(c.nome)}</a> por ${esc(c.autor)} · ${esc(c.licenca)}</li>`).join("")}</ul>`:"")
+    + (LOADED.length<5?`<p>${used.length?"As demais peças":"As peças da cena"} são provisórias, desenhadas no código. Os modelos do Sketchfab entram quando forem salvos em <code>site/modelos/</code>.</p>`:"")
+    + `<p>Efeito de TV inspirado em <a href="https://codepen.io/Mobius1/pen/ZNgwbr" target="_blank" rel="noopener">CRT TV</a>, de Karl Saunders (Mobius1). 3D com <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a>.</p>`;
+}
+
+// ---- Laço ----
+let glow=0, last=performance.now();
+function resize(){ const w=innerWidth, h=innerHeight; renderer.setSize(w,h,false); cssR.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix();
+  if(mode==="shelf"||mode==="held"||mode==="loading") { if(SHELF) shelfGoal(); } else if(mode==="tv") watchGoal(); }
+addEventListener("resize", resize);
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now;
+  for(const t of TW){ const p=Math.min(1,(now-t.t0)/t.ms); t.fn(t.e(p)); if(p>=1){ TW.delete(t); t.res(); } }
+  const k=1-Math.exp(-dt*5);
+  cam.pos.lerp(goal.pos,k); cam.look.lerp(goal.look,k);
+  camera.position.copy(cam.pos); camera.lookAt(cam.look);
+  for(const t of TAPES){ const u=t.userData; if(Math.abs(u.goal-u.pull)>1e-4){ u.pull+=(u.goal-u.pull)*Math.min(1,dt*14); t.position.z=u.home.z+u.pull; } }
+  if(mode==="held" && held){ held.spin*=.995; held.mesh.quaternion.copy(qY(-Math.PI/2+held.spin+Math.sin(now/900)*.06)); held.mesh.position.copy(heldSpot()); }
+  if(TVGLOW){ const target=glow*(.7+Math.random()*.5); TVGLOW.intensity+= (target*1.4-TVGLOW.intensity)*.3; }
+  if(NEON) NEON.neonL.intensity = .7*(Math.random()<.004?.2:1);
+  renderer.render(scene,camera); cssR.render(cssScene,camera);
+  requestAnimationFrame(loop);
+}
+
+// ---- Montagem ----
+let NEON;
+(async()=>{
+  const [cenaJ, credJ] = await Promise.all([getJSON("modelos/cena.json"), getJSON("modelos/creditos.json")]);
+  const CENA = merge(structuredClone(CENA_PADRAO), cenaJ);
+  getJSON("posters.json").then(p=>{ if(p) POSTERS=p; });
+  scene.add(new THREE.HemisphereLight(0x9a9ac8, 0x2a1418, .55));
+  scene.add(new THREE.AmbientLight(0xffffff, .12));
+  SHELF = await buildShelf(CENA.estante);
+  BX = SHELF.W + .95;
+  BENCHINFO = await buildBench(CENA, BX);
+  NEON = buildRoom(SHELF.W, BX);
+  NEON.neon.position.y = SHELF.H + .22;
+  NEON.neonL.position.set(NEON.neon.position.x, SHELF.H+.22, .3);
+  for(const x of [.25,.5,.75].map(f=>SHELF.W*f)){ const l=new THREE.PointLight(0xffd6a0, 1.6, 2.6, 2); l.position.set(x, SHELF.H+.25, .9); scene.add(l); }
+  credits(credJ);
+  $("tagline").textContent = `${MOVIES.length} fitas · ${CATS.length} prateleiras`;
+  $("tabs").innerHTML = CATS.map(c=>`<button class="chip" type="button" data-c="${c.id}" style="--dot:${catColor(c.id)}" aria-pressed="false"><i></i>${esc(c.name)}</button>`).join("");
+  $("tabs").onclick = e=>{ const b=e.target.closest("[data-c]"); if(b && mode==="shelf") goRow(b.dataset.c); };
+  resize();
+  view.d = innerWidth<720 ? .95 : 1.25; view.y = ROWS[0].y + TAPE.h/2 - (innerWidth<720 ? 0 : ROW_H*.9); view.x = visW(view.d)/2 - .05;
+  shelfGoal(); cam.pos.copy(goal.pos).add(V3(-.3,.1,.6)); cam.look.copy(goal.look);
+  setMode("shelf");
+  requestAnimationFrame(loop);
+  setTimeout(()=>{ $("loading").classList.add("done"); setTimeout(()=>$("hint").style.opacity=0, 7000); }, 300);
+  // #<id do filme> abre com a fita já no VCR
+  const id=location.hash.slice(1), t=id && TAPES.find(t=>t.userData.m.id===id);
+  if(t){ const p=t.userData.home; view.x=p.x; view.y=p.y; shelfGoal(); await sleep(900); await select(t); await sleep(400); insert(); }
+})();
+</script>
+<template id="screenTpl"><div class="tvscreen"><div class="tube"><div class="pic"></div><canvas class="snow" width="320" height="240"></canvas><div class="osd"></div></div><div class="scan"></div><div class="vig"></div></div></template>

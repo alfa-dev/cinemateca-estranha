@@ -52,6 +52,18 @@ Cada curador tem uma página em `#curador/<id>`, com retrato, números e bio, e 
 
 Detalhes da página de perfil (layout, retrato, tela com o trecho de filme e como montá-lo) em [`docs/pagina-do-curador.md`](docs/pagina-do-curador.md).
 
+## Locadora
+
+`site/locadora.html` (gerada por `finalize.py` a partir de `site/locadora-template.html`) mostra as fitas numa estante 3D (three.js), uma prateleira por sessão, com uma bancada, um VCR e uma TV de tubo. Clique numa fita, ponha no VCR e o trailer toca na TV, com efeito CRT inspirado no [pen do Mobius1](https://codepen.io/Mobius1/pen/ZNgwbr). `#<id do filme>` abre com a fita já no VCR.
+
+Os modelos vêm do Sketchfab (lista e créditos em `site/modelos/creditos.json`). Baixe o `.glb` de texturas 1k em `modelos-baixados/` (fora do git) com os nomes `vcr.glb`, `tv.glb`, `fita.glb`, `estante.glb` e `bancada.glb`, e otimize cada um para `site/modelos/`:
+
+```sh
+npx @gltf-transform/cli optimize modelos-baixados/tv.glb site/modelos/tv.glb --compress meshopt --texture-compress webp
+```
+
+Escala, rotação, a boca do VCR, o retângulo da tela da TV e as alturas das prateleiras ficam em `site/modelos/cena.json`. Enquanto um modelo não existe, a página usa uma peça provisória desenhada no código.
+
 ## Trailers
 
 Os MP4 (~700 MB, 360p) não estão no git. No Artifact a página os carrega de `/_blob/<asset id>`.

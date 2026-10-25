@@ -6,3 +6,5 @@ raw/
 *.log
 .DS_Store
 __pycache__/
+# modelos do Sketchfab como baixados; os otimizados ficam em site/modelos/
+modelos-baixados/

@@ -96,6 +96,11 @@ site_meta=meta('Cinemateca Estranha',SITE_DESC,BASE+'cinemateca.html',BASE+'shar
 site_meta+='\n<script type="application/ld+json">'+js({'@context':'https://schema.org','@type':'WebSite','name':'Cinemateca Estranha','url':BASE+'cinemateca.html','description':SITE_DESC,'inLanguage':'pt-BR','image':BASE+'share/cinemateca.jpg'})+'</script>'
 SES=json.load(open(S+'/sessions.json'))
 open(S+'/site/cinemateca.html','w').write(t.replace('__META__',site_meta).replace('__SESSIONS__',js(SES)).replace('__CURATORS__',js(cur)).replace('__DATA__',js(M)))
+# locadora: as mesmas fitas numa estante 3D, com VCR e TV de tubo (só os campos que a página usa)
+LOC_KEYS=('id','title','aka','year','cats','genres','countries','directors','cast','kind','tr','ytt')
+LOC_DESC=f'A Cinemateca Estranha como videolocadora: {len(M)} fitas VHS numa estante, um VCR e uma TV de tubo. Escolha a fita, ponha no VCR e veja o trailer.'
+loc_meta=meta('Locadora · Cinemateca Estranha',LOC_DESC,BASE+'locadora.html',BASE+'share/cinemateca.jpg','Cartazes de filmes de culto atrás do nome Cinemateca Estranha')
+open(S+'/site/locadora.html','w').write(open(S+'/site/locadora-template.html').read().replace('__META__',loc_meta).replace('__SESSIONS__',js(SES)).replace('__DATA__',js([{k:m[k] for k in LOC_KEYS if k in m} for m in M])))
 json.dump({'name':'Cinemateca Estranha','short_name':'Cinemateca','description':SITE_DESC,'lang':'pt-BR','start_url':'cinemateca.html','scope':'./','display':'standalone','background_color':'#121019','theme_color':'#121019',
   'icons':[{'src':'icons/icon-192.png','sizes':'192x192','type':'image/png'},{'src':'icons/icon-512.png','sizes':'512x512','type':'image/png'},{'src':'icons/icon-maskable-512.png','sizes':'512x512','type':'image/png','purpose':'maskable'}]},
   open(S+'/site/site.webmanifest','w'),ensure_ascii=False,indent=2)

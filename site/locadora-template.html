@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Locadora · Cinemateca Estranha</title>
+__META__
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Instrument+Sans:wght@400;500;600&family=VT323&display=swap">
+<style>
+/* Locadora: uma sala escura com a estante de fitas à esquerda e a bancada com VCR e TV de tubo à direita.
+   A cena é WebGL; a tela da TV é um elemento CSS3D atrás do canvas, que aparece por um "furo" no lugar do vidro. */
+:root{
+  --bg:#07060a; --panel:#141019; --line:#2f2a3d; --fg:#efe9dc; --muted:#a39bb0; --accent:#f4a640; --on-accent:#1a1206;
+  --osd:#7dffb0; --vhs:#1b2fd6;
+  --c-weird:#e86bb3; --c-mundo:#3fc2b0; --c-mindfuck:#9b8cff; --c-horror:#ef5a4f; --c-thelema:#d9b54a;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --vt:"VT323",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 var(--body);overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:inherit}
+
+#stage{position:fixed;inset:0}
+#css3d,#gl{position:absolute;inset:0;width:100%;height:100%}
+#css3d{z-index:0;background:#050407}
+#gl{z-index:1;touch-action:none;cursor:grab;display:block}
+#gl.drag{cursor:grabbing}
+#gl.point{cursor:pointer}
+body.tv #gl{pointer-events:none}
+
+/* HUD */
+.hud{position:fixed;z-index:5;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px max(16px,env(safe-area-inset-left,0px));pointer-events:none}
+.hud>*{pointer-events:auto}
+.top{top:0;padding-top:max(10px,env(safe-area-inset-top,0px));background:linear-gradient(#07060ae6,#07060a00);flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;line-height:.85;margin-right:4px}
+.brand b{font:900 30px/.85 var(--display);text-transform:uppercase;letter-spacing:.01em}
+.brand b span{color:var(--accent)}
+.brand small{font:18px/1 var(--vt);color:var(--muted);letter-spacing:.06em;margin-top:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#141019d9;backdrop-filter:blur(6px);border-radius:6px;padding:4px 10px;font:20px/1.1 var(--vt);letter-spacing:.04em;text-transform:uppercase;cursor:pointer;text-decoration:none;white-space:nowrap}
+.chip:hover{border-color:var(--muted)}
+.chip.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chip[aria-pressed="true"]{border-color:var(--dot,var(--accent));box-shadow:inset 0 -3px 0 var(--dot,var(--accent))}
+.chip i{font-style:normal;width:9px;height:9px;border-radius:2px;background:var(--dot)}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1 1 auto;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+.search{position:relative;flex:0 1 260px}
+.search input{width:100%;background:#141019d9;border:1px solid var(--line);border-radius:6px;padding:5px 10px;font:20px/1.1 var(--vt);letter-spacing:.04em}
+.search input::placeholder{color:var(--muted);text-transform:uppercase}
+.results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:0 18px 40px #000a}
+.results button{display:flex;width:100%;gap:8px;align-items:baseline;text-align:left;border:0;background:none;padding:8px 10px;cursor:pointer}
+.results button:hover,.results button:focus-visible{background:#ffffff12}
+.results i{font-style:normal;width:8px;height:8px;border-radius:2px;background:var(--dot);flex:none;translate:0 -1px}
+.results b{font-weight:600}
+.results span{color:var(--muted);font-size:13px;margin-left:auto}
+@media (max-width:720px){
+  .top{gap:8px}
+  .brand b{font-size:24px}
+  .tabs{order:3;flex-basis:100%}
+  .search{flex:1 1 140px}
+}
+
+.hint{position:fixed;z-index:4;left:50%;translate:-50% 0;bottom:max(14px,env(safe-area-inset-bottom,0px));font:20px/1.2 var(--vt);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:#07060acc;padding:4px 12px;border-radius:6px;white-space:nowrap;pointer-events:none;transition:opacity .4s}
+.zoom{position:fixed;z-index:4;right:max(16px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px}
+.zoom .chip{justify-content:center;width:38px;height:38px;padding:0;font-size:26px}
+body:not(.shelf) .zoom, body:not(.shelf) .hint{opacity:0;pointer-events:none}
+@media (max-width:720px){ .hint{font-size:17px;left:16px;translate:none} }
+
+.tip{position:fixed;z-index:6;pointer-events:none;background:#07060aee;border:1px solid var(--line);border-left:4px solid var(--dot);border-radius:6px;padding:6px 10px;max-width:280px;translate:14px 14px}
+.tip b{display:block;font:700 19px/1.05 var(--display);text-transform:uppercase;letter-spacing:.01em}
+.tip span{font:18px/1.1 var(--vt);color:var(--muted)}
+
+/* Cartão da fita na mão */
+.card{position:fixed;z-index:5;right:max(16px,env(safe-area-inset-right,0px));top:50%;translate:0 -50%;width:min(360px,calc(100vw - 32px));max-height:calc(100dvh - 140px);overflow:auto;background:#120f17f2;border:1px solid var(--line);border-top:4px solid var(--dot);border-radius:10px;padding:16px 18px 18px;box-shadow:0 24px 60px #000c;animation:rise .35s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+.card .kick{font:20px/1 var(--vt);letter-spacing:.08em;text-transform:uppercase;color:var(--dot)}
+.card h2{font:900 34px/.95 var(--display);text-transform:uppercase;margin:6px 0 4px;letter-spacing:.005em}
+.card .aka{color:var(--muted);font-size:13px}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:12px 0 0;font-size:14px}
+.card dt{font:18px/1.2 var(--vt);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.card dd{margin:0}
+.card .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.card .note{font:17px/1.15 var(--vt);color:var(--muted);margin-top:12px;letter-spacing:.03em}
+@media (max-width:720px){
+  .card{top:auto;bottom:max(12px,env(safe-area-inset-bottom,0px));translate:none;left:16px;right:16px;width:auto;max-height:46dvh}
+  .card h2{font-size:28px}
+}
+
+.watchbar{position:fixed;z-index:5;left:50%;translate:-50% 0;bottom:max(14px,env(safe-area-inset-bottom,0px));display:flex;gap:8px}
+
+/* Tela de abertura */
+.loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:var(--vhs);color:#fff;font:clamp(28px,6vw,54px)/1 var(--vt);letter-spacing:.08em;text-shadow:2px 0 #ff2a6d88,-2px 0 #00e5ff88;transition:opacity .6s}
+.loading.done{opacity:0;pointer-events:none}
+.loading small{display:block;font-size:.45em;margin-top:14px;opacity:.8;text-align:center}
+.loading p{margin:0;text-align:center;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+
+dialog{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;max-width:min(560px,calc(100vw - 32px));padding:20px 22px}
+dialog::backdrop{background:#000b}
+dialog h2{font:900 30px/1 var(--display);text-transform:uppercase;margin:0 0 12px}
+dialog ul{padding-left:18px;margin:0 0 12px}
+dialog li{margin:6px 0}
+dialog p{color:var(--muted);font-size:14px}
+.nogl{position:fixed;inset:0;z-index:30;display:grid;place-items:center;text-align:center;padding:24px;background:var(--bg)}
+.nogl[hidden]{display:none}
+
+/* ---- Tela da TV (efeito CRT inspirado em "CRT TV" de Karl Saunders/Mobius1, CodePen ZNgwbr) ---- */
+.tvscreen{width:640px;height:480px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#1a1d1c 0%,#0b0c0c 70%,#050505 100%);border-radius:28px/24px}
+.tvscreen .tube{position:absolute;inset:0;opacity:0}
+.tvscreen.on .tube{opacity:1;animation:on 1.1s linear forwards}
+.tvscreen.turnoff .tube{opacity:1;animation:off .55s cubic-bezier(.23,1,.32,1) forwards}
+.tvscreen .pic{position:absolute;inset:0;background:#000;display:grid;place-items:center;animation:wobblex 100ms infinite,wobbley 100ms infinite}
+.tvscreen .pic iframe,.tvscreen .pic video{width:640px;height:360px;border:0;display:block;background:#000}
+.tvscreen .blue{position:absolute;inset:0;background:var(--vhs);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font:44px/1 var(--vt);letter-spacing:.08em;text-align:center;padding:30px}
+.tvscreen .blue a{font-size:28px;color:#fff;background:#ffffff22;padding:6px 14px;border-radius:4px;text-decoration:none}
+.tvscreen .snow{position:absolute;inset:0;width:100%;height:100%;background:#bdbdbd;opacity:0;transition:opacity .6s;image-rendering:pixelated;pointer-events:none}
+.tvscreen .snow.show{opacity:1;transition:none}
+.tvscreen .osd{position:absolute;left:44px;top:34px;font:46px/1 var(--vt);color:#fff;letter-spacing:.06em;text-shadow:3px 3px 0 #000a;pointer-events:none;opacity:0;transition:opacity .3s}
+.tvscreen .osd.show{opacity:1}
+.tvscreen .osd.r{left:auto;right:44px}
+.tvscreen .scan{position:absolute;inset:0;pointer-events:none;background:linear-gradient(#12101000 50%,#00000040 50%),linear-gradient(90deg,#ff00000f,#00ff0005,#0000ff0f);background-size:100% 3px,3px 100%;animation:flicker .15s infinite}
+.tvscreen .vig{position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:radial-gradient(ellipse at 50% 50%,#0000 58%,#000a 88%,#000 100%),linear-gradient(160deg,#ffffff14 0%,#fff0 30%)}
+.tvscreen.playing .pic{animation:wobblex 100ms infinite,wobbley 100ms infinite,glitch 7s infinite}
+@keyframes on{
+  0%{transform:scale(1,.8) translate3d(0,0,0);filter:brightness(4);opacity:1}
+  3.5%{transform:scale(1,.8) translate3d(0,100%,0)}
+  3.6%{transform:scale(1,.8) translate3d(0,-100%,0);opacity:1}
+  9%{transform:scale(1.3,.6) translate3d(0,100%,0);filter:brightness(4);opacity:0}
+  11%{transform:scale(1,1) translate3d(0,0,0);filter:contrast(0) brightness(0);opacity:0}
+  100%{transform:scale(1,1) translate3d(0,0,0);filter:contrast(1) brightness(1.1) saturate(1.2);opacity:1}}
+@keyframes off{
+  0%{transform:scale(1,1);filter:brightness(1)}
+  40%{transform:scale(1,.005);filter:brightness(100)}
+  70%{transform:scale(1,.005)}
+  90%{transform:scale(.005,.005)}
+  100%{transform:scale(0,0)}}
+@keyframes wobblex{50%{left:1px}51%{left:0}}
+@keyframes wobbley{0%{top:-1px}50%{top:0}}
+@keyframes flicker{50%{opacity:.85}}
+@keyframes glitch{
+  0%,30%,32%,100%{transform:none;filter:none}
+  31%{transform:skewX(8deg) scale(1.02,1);filter:hue-rotate(40deg) contrast(1.4)}
+  31.5%{transform:translateX(-6px) skewX(-4deg)}
+  70%,72%{transform:none}
+  71%{transform:translateY(4px) scale(1,1.01);filter:saturate(2)}}
+@media (prefers-reduced-motion:reduce){
+  .tvscreen .pic,.tvscreen.playing .pic,.tvscreen .scan{animation:none}
+}
+</style>
+
+<div id="stage"><div id="css3d"></div><canvas id="gl" aria-label="Estante de fitas VHS, VCR e TV de tubo"></canvas></div>
+
+<header class="hud top">
+  <a class="chip" href="cinemateca.html" title="Voltar ao catálogo">← Catálogo</a>
+  <div class="brand"><b>Locadora <span>Estranha</span></b><small id="tagline">fitas · sessões</small></div>
+  <nav class="tabs" id="tabs" aria-label="Prateleiras"></nav>
+  <div class="search">
+    <input id="q" type="search" placeholder="Procurar fita…" autocomplete="off" aria-label="Procurar fita">
+    <div class="results" id="results" hidden></div>
+  </div>
+  <button class="chip" id="sound" type="button" aria-pressed="true">Som</button>
+  <button class="chip" id="creditsBtn" type="button">Créditos</button>
+</header>
+
+<div class="hint" id="hint">Arraste para andar pela estante · clique numa fita</div>
+<div class="zoom"><button class="chip" type="button" id="zin" aria-label="Aproximar">+</button><button class="chip" type="button" id="zout" aria-label="Afastar">−</button></div>
+<div class="tip" id="tip" hidden></div>
+<aside class="card" id="card" hidden aria-live="polite"></aside>
+<div class="watchbar" id="watchbar" hidden>
+  <button class="chip primary" type="button" id="eject">⏏ Ejetar</button>
+  <button class="chip" type="button" id="frame">Afastar</button>
+</div>
+
+<div class="loading" id="loading"><p>REBOBINANDO…<small>por favor, rebobine a fita antes de devolver</small></p></div>
+<div class="nogl" id="nogl" hidden><div><h2>Sem sinal</h2><p>Este navegador não tem WebGL, então a locadora não abre aqui.</p><a class="chip primary" href="cinemateca.html">Ir para o catálogo</a></div></div>
+
+<dialog id="credits" aria-labelledby="crTitle">
+  <h2 id="crTitle">Créditos</h2>
+  <div id="crBody"></div>
+  <form method="dialog"><button class="chip">Fechar</button></form>
+</dialog>
+
+<script>
+const MOVIES = __DATA__;
+const CATS = __SESSIONS__;
+</script>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from "three";
+import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
+import {CSS3DRenderer, CSS3DObject} from "three/addons/renderers/CSS3DRenderer.js";
+import {MeshoptDecoder} from "three/addons/libs/meshopt_decoder.module.js";
+import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
+
+const $ = id => document.getElementById(id);
+const V3 = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
+const norm = s => (s||"").toString().normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const esc = s => (s??"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const hueOf = s => [...s].reduce((h,c)=>(h*31+c.charCodeAt(0))%360,7);
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
+const css = getComputedStyle(document.documentElement);
+const catColor = id => css.getPropertyValue("--c-"+id).trim() || CAT[id].color;
+const BY_ID = Object.fromEntries(MOVIES.map(m=>[m.id,m]));
+MOVIES.forEach(m=>{ m.hay=norm([m.title,...m.aka,m.year,...m.directors,...m.countries,m.cast].join(" ")); });
+// mesma regra do catálogo: fora do Artifact os /_blob/ não existem e o trailer vem do YouTube
+const EMBED = location.protocol==="file:" || location.hostname.endsWith("github.io") || ["localhost","127.0.0.1"].includes(location.hostname);
+const hasTrailer = m => EMBED ? !!m.ytt : !!m.tr;
+const searchURL = m => `https://www.youtube.com/results?search_query=${encodeURIComponent(m.title+" "+(m.year||"")+" trailer")}`;
+
+// ---- Ajustes da cena: site/modelos/cena.json sobrescreve estes valores ----
+// largura em metros; rot em graus (aplicada antes de medir); as frações são relativas à caixa do modelo já ajustado
+const CENA_PADRAO = {
+  estante: {arquivo:"estante.glb", largura:0.9, altura:1.5, rot:[0,0,0], prateleiras:null},
+  bancada: {arquivo:"bancada.glb", largura:1.0, rot:[0,0,0], topo:null},
+  vcr:     {arquivo:"vcr.glb", largura:0.43, rot:[0,0,0], boca:{x:0.36,y:0.62}, visor:{x:0.74,y:0.55,largura:0.1}},
+  tv:      {arquivo:"tv.glb", largura:0.56, rot:[0,0,0], tela:{x:0.44,y:0.55,largura:0.62,z:0.004}},
+  fita:    {arquivo:"fita.glb", largura:0.187, rot:[0,0,0]}
+};
+const getJSON = u => fetch(u).then(r=>r.ok?r.json():null).catch(()=>null);
+const merge = (a,b) => { if(!b) return a; for(const k in b) a[k] = (b[k] && typeof b[k]==="object" && !Array.isArray(b[k]) && a[k]) ? merge({...a[k]},b[k]) : b[k]; return a; };
+
+// ---- Renderização ----
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas:$("gl"), antialias:true, alpha:true}); }
+catch(e){ $("nogl").hidden=false; $("loading").classList.add("done"); throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setClearColor(0x000000,0);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+const cssR = new CSS3DRenderer(); $("css3d").appendChild(cssR.domElement);
+const scene = new THREE.Scene(), cssScene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x07060a, 4, 9);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 40);
+const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+const LOADED = [];
+async function loadModel(c, key){
+  try { const g = await loader.loadAsync("modelos/"+c.arquivo); LOADED.push(key); return g.scene; }
+  catch(_){ return null; }
+}
+// gira, escala pela largura e põe a origem no centro da base; devolve o grupo e o tamanho final
+function fit(obj, c){
+  obj.rotation.set(...c.rot.map(d=>d*Math.PI/180));
+  obj.updateMatrixWorld(true);
+  let b = new THREE.Box3().setFromObject(obj);
+  obj.scale.multiplyScalar(c.largura/(b.max.x-b.min.x));
+  obj.updateMatrixWorld(true);
+  b = new THREE.Box3().setFromObject(obj);
+  const ctr = b.getCenter(V3());
+  obj.position.sub(V3(ctr.x, b.min.y, ctr.z));
+  obj.traverse(o=>{ if(o.isMesh){ o.castShadow=o.receiveShadow=false; } });
+  const g = new THREE.Group(); g.add(obj);
+  return {group:g, size:b.getSize(V3())};
+}
+
+// ---- Texturas desenhadas em canvas ----
+function canvasTex(w,h,draw,repeat){
+  const c=document.createElement("canvas"); c.width=w; c.height=h; draw(c.getContext("2d"),w,h);
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8;
+  if(repeat){ t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(...repeat); }
+  return t;
+}
+const noise = (g,w,h,n,a) => { for(let i=0;i<n;i++){ g.fillStyle=`rgba(${Math.random()<.5?"0,0,0":"255,255,255"},${Math.random()*a})`; g.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*2,1+Math.random()*2); } };
+const woodTex = (base="#5a3a22") => canvasTex(512,512,(g,w,h)=>{
+  g.fillStyle=base; g.fillRect(0,0,w,h);
+  for(let y=0;y<h;y+=2){ g.fillStyle=`rgba(0,0,0,${.08+.12*Math.abs(Math.sin(y*.05+Math.sin(y*.013)*3))})`; g.fillRect(0,y,w,1+Math.random()); }
+  noise(g,w,h,2500,.08);
+},[2,1]);
+
+// ---- Sala ----
+function buildRoom(W, bx){
+  const span = bx+3;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(span+6, 8), new THREE.MeshStandardMaterial({roughness:.95, map:canvasTex(256,256,(g,w,h)=>{
+    g.fillStyle="#2a0f18"; g.fillRect(0,0,w,h);
+    // carpete de locadora: confete geométrico
+    const cols=["#5b1e33","#1c3b52","#4d3b12","#3a1c4f"];
+    for(let i=0;i<70;i++){ g.fillStyle=cols[i%4]; g.save(); g.translate(Math.random()*w,Math.random()*h); g.rotate(Math.random()*6); g.fillRect(-6,-1.5,12,3); g.restore(); }
+    noise(g,w,h,3000,.12);
+  },[(span+6)*1.5, 12])}));
+  floor.rotation.x=-Math.PI/2; floor.position.set(span/2-1.5, 0, 2);
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(span+6, 4), new THREE.MeshStandardMaterial({roughness:.9, map:canvasTex(256,256,(g,w,h)=>{
+    g.fillStyle="#13202a"; g.fillRect(0,0,w,h);
+    for(let x=0;x<w;x+=32){ g.fillStyle="#182a36"; g.fillRect(x,0,14,h); g.fillStyle="#0e1820"; g.fillRect(x+14,0,2,h); }
+    noise(g,w,h,2000,.06);
+  },[(span+6)*2.2, 4*2.2])}));
+  wall.position.set(span/2-1.5, 2, -0.09);
+  // rodapé
+  const skirt = new THREE.Mesh(new THREE.BoxGeometry(span+6,.1,.02), new THREE.MeshStandardMaterial({color:0x1a1210, roughness:.6}));
+  skirt.position.set(span/2-1.5,.05,-0.075);
+  scene.add(floor, wall, skirt);
+
+  // letreiro de neon sobre a estante
+  const neon = new THREE.Mesh(new THREE.PlaneGeometry(1.6,.24), new THREE.MeshBasicMaterial({transparent:true, toneMapped:false, map:canvasTex(1024,154,(g,w,h)=>{
+    g.font='900 104px "Big Shoulders Display"'; g.textAlign="center"; g.textBaseline="middle";
+    g.shadowColor="#ff3d9a"; g.shadowBlur=28; g.strokeStyle="#ff7cc0"; g.lineWidth=6;
+    for(let i=0;i<3;i++) g.strokeText("LOCADORA ESTRANHA", w/2, h/2+6);
+    g.shadowBlur=0; g.fillStyle="#ffe6f3"; g.fillText("LOCADORA ESTRANHA", w/2, h/2+6);
+  })}));
+  neon.position.set(Math.min(W/2, 1.2), 0, -0.07);
+  const neonL = new THREE.PointLight(0xff3d9a, .7, 2.4, 2);
+  // "VÍDEO" em azul sobre a bancada
+  const vid = new THREE.Mesh(new THREE.PlaneGeometry(.7,.2), new THREE.MeshBasicMaterial({transparent:true, toneMapped:false, map:canvasTex(512,146,(g,w,h)=>{
+    g.font='italic 900 112px "Big Shoulders Display"'; g.textAlign="center"; g.textBaseline="middle";
+    g.shadowColor="#2fd5ff"; g.shadowBlur=26; g.strokeStyle="#7fe6ff"; g.lineWidth=5;
+    for(let i=0;i<3;i++) g.strokeText("VÍDEO", w/2, h/2+4);
+    g.shadowBlur=0; g.fillStyle="#e6fbff"; g.fillText("VÍDEO", w/2, h/2+4);
+  })}));
+  vid.position.set(bx, 1.62, -0.07);
+  const vidL = new THREE.PointLight(0x2fd5ff, .9, 2.2, 2); vidL.position.set(bx, 1.62, .25);
+  scene.add(neon, neonL, vid, vidL);
+  return {neon, neonL};
+}
+
+// ---- Estante ----
+const TAPE = {w:.026, h:.19, d:.105}, GAP = .0016, ROW_H = .27, BOARD = .018, BASE = .09, PAD = .07;
+let ROWS = [];       // [{cat, y, items:[movie]}]
+const TAPES = [];    // meshes na estante
+const SLOT_W = 64, SLOT_H = 512;
+
+function drawSpine(g, ox, oy, m, cat){
+  const hue=hueOf(m.title), col=catColor(cat);
+  g.save(); g.translate(ox,oy);
+  g.fillStyle=`hsl(${hue} ${22+hue%30}% ${10+hue%9}%)`; g.fillRect(0,0,SLOT_W,SLOT_H);
+  // desgaste do papelão
+  for(let i=0;i<40;i++){ g.fillStyle=`rgba(255,255,255,${Math.random()*.05})`; g.fillRect(Math.random()*SLOT_W,Math.random()*SLOT_H,1+Math.random()*3,2+Math.random()*24); }
+  g.fillStyle=col; g.fillRect(0,0,SLOT_W,58);
+  g.fillStyle="#120e0a"; g.font='900 30px "Big Shoulders Display"'; g.textAlign="center"; g.textBaseline="middle"; g.fillText("CE",SLOT_W/2,31);
+  g.fillStyle=col; g.fillRect(0,462,SLOT_W,4);
+  g.fillStyle="#f3ead2"; g.font='30px VT323'; g.fillText(m.year||"—",SLOT_W/2,490);
+  // título de baixo para cima, como nas lombadas brasileiras
+  g.translate(SLOT_W/2, 260); g.rotate(-Math.PI/2);
+  let t=m.title.toUpperCase(), fs=42;
+  for(;fs>18;fs-=2){ g.font=`900 ${fs}px "Big Shoulders Display"`; if(g.measureText(t).width<=380) break; }
+  while(g.measureText(t).width>380 && t.length>4) t=t.slice(0,-2).trimEnd()+"…";
+  g.fillStyle="#f3ead2"; g.fillText(t,0,3);
+  g.restore();
+}
+
+function buildAtlas(entries){
+  const cols = 2048/SLOT_W, rows = Math.ceil(entries.length/cols);
+  const c=document.createElement("canvas"); c.width=2048; c.height=rows*SLOT_H;
+  const g=c.getContext("2d");
+  entries.forEach((e,i)=>{ e.ox=(i%cols)*SLOT_W; e.oy=Math.floor(i/cols)*SLOT_H; drawSpine(g,e.ox,e.oy,e.m,e.cat); });
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8;
+  return {tex:t, w:c.width, h:c.height};
+}
+// a face +z da caixa é a lombada: aponta o UV dela para o pedaço certo do atlas
+function spineGeo(e, A){
+  const geo = new THREE.BoxGeometry(TAPE.w, TAPE.h, TAPE.d);
+  const uv = geo.attributes.uv;
+  for(let k=16;k<20;k++){ const u=uv.getX(k), v=uv.getY(k); uv.setXY(k, (e.ox+u*SLOT_W)/A.w, 1-(e.oy+(1-v)*SLOT_H)/A.h); }
+  return geo;
+}
+
+async function buildShelf(cfg){
+  // cada sessão é uma prateleira, de cima para baixo na ordem de sessions.json
+  ROWS = CATS.map(c=>({cat:c.id, items:MOVIES.filter(m=>m.cats.includes(c.id)).sort((a,b)=>norm(a.title).localeCompare(norm(b.title)))}));
+  const W = Math.max(1.6, PAD*2 + Math.max(...ROWS.map(r=>r.items.length))*(TAPE.w+GAP));
+  const n = ROWS.length, H = BASE + n*ROW_H + .03;
+  const glb = await loadModel(cfg, "estante");
+  if(glb && cfg.prateleiras){
+    // estante do Sketchfab repetida lado a lado; as alturas das tábuas vêm de cena.json
+    const unit = fit(glb, cfg);
+    const k = Math.ceil(W/unit.size.x);
+    for(let i=0;i<k;i++){ const u=i?unit.group.clone():unit.group; u.position.set(unit.size.x*(i+.5), 0, -0.01); scene.add(u); }
+    ROWS.forEach((r,i)=>r.y=cfg.prateleiras[i] ?? cfg.prateleiras.at(-1));
+    var Wf = k*unit.size.x, Hf = unit.size.y;
+  } else {
+    const wood = new THREE.MeshStandardMaterial({map:woodTex(), roughness:.7});
+    const dark = new THREE.MeshStandardMaterial({map:woodTex("#2c1d12"), roughness:.85});
+    const add = (geo,mat,x,y,z) => { const o=new THREE.Mesh(geo,mat); o.position.set(x,y,z); scene.add(o); };
+    add(new THREE.BoxGeometry(W,H,.012), dark, W/2, H/2, -0.066);
+    for(const x of [-.0125, W+.0125]) add(new THREE.BoxGeometry(.025,H,.15), wood, x, H/2, .005);
+    add(new THREE.BoxGeometry(W+.05,.03,.16), wood, W/2, H-.015, .005);
+    add(new THREE.BoxGeometry(W,BASE,.15), dark, W/2, BASE/2, .005);
+    ROWS.forEach((r,i)=>{ r.y = BASE + (n-1-i)*ROW_H; if(i<n-1) add(new THREE.BoxGeometry(W,BOARD,.15), wood, W/2, r.y-BOARD/2, .005); });
+    var Wf = W, Hf = H;
+  }
+  // lombadas
+  const entries = ROWS.flatMap(r=>r.items.map(m=>({m, cat:r.cat})));
+  // sem as fontes (rede ruim), as lombadas saem com a fonte de reserva
+  await Promise.all(['900 40px "Big Shoulders Display"','30px VT323'].map(f=>document.fonts.load(f).catch(()=>{})));
+  const A = buildAtlas(entries);
+  const spineMat = new THREE.MeshStandardMaterial({map:A.tex, roughness:.55});
+  const sideMat = new THREE.MeshStandardMaterial({color:0x1b1720, roughness:.6});
+  const edgeMat = new THREE.MeshStandardMaterial({color:0x2a2530, roughness:.8});
+  const mats = [sideMat, sideMat, edgeMat, edgeMat, spineMat, sideMat];
+  let ei = 0;
+  ROWS.forEach(r=>{
+    r.items.forEach((m,k)=>{
+      const e = entries[ei++];
+      const t = new THREE.Mesh(spineGeo(e,A), mats);
+      const jitter = (hueOf(m.id+r.cat)%7-3)*.0012;
+      t.position.set(PAD + k*(TAPE.w+GAP) + TAPE.w/2, r.y + TAPE.h/2, .0075 + jitter);
+      t.userData = {m, cat:r.cat, home:t.position.clone(), pull:0, goal:0};
+      TAPES.push(t); scene.add(t);
+    });
+    // etiqueta da prateleira, repetida a cada 1,4 m
+    const lab = canvasTex(512,64,(g,w,h)=>{
+      g.fillStyle=catColor(r.cat); g.fillRect(0,0,w,h);
+      g.fillStyle="#120e0a"; g.font='44px VT323'; g.textBaseline="middle";
+      g.fillText(CAT[r.cat].name.toUpperCase(),16,h/2+2);
+      g.textAlign="right"; g.fillText(r.items.length+" FITAS",w-16,h/2+2);
+    });
+    for(let x=.3; x<Math.max(.4,r.items.length*(TAPE.w+GAP)); x+=1.4){
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(.2,.025), new THREE.MeshBasicMaterial({map:lab, toneMapped:false}));
+      p.position.set(x, r.y-.0125, .0815); scene.add(p);
+    }
+  });
+  return {W:Wf, H:Hf, spineMat, A, entries};
+}
+
+// ---- Bancada, VCR, TV e fita (modelos do Sketchfab; sem eles, peças provisórias) ----
+const plastic = (c,r=.45,m=.1) => new THREE.MeshStandardMaterial({color:c, roughness:r, metalness:m});
+function fallbackBench(){
+  const g=new THREE.Group(), w=1.0, h=.55, d=.45, wood=new THREE.MeshStandardMaterial({map:woodTex("#3b2416"), roughness:.6});
+  const add=(geo,x,y,z)=>{ const o=new THREE.Mesh(geo,wood); o.position.set(x,y,z); g.add(o); };
+  add(new THREE.BoxGeometry(w,.035,d),0,h-.0175,0);
+  for(const x of [-w/2+.02,w/2-.02]) add(new THREE.BoxGeometry(.04,h-.035,d),x,(h-.035)/2,0);
+  add(new THREE.BoxGeometry(w-.08,.025,d-.04),0,.12,0);
+  add(new THREE.BoxGeometry(w-.08,h-.06,.015),0,h/2,-d/2+.01);
+  return {group:g, size:V3(w,h,d)};
+}
+function vfdTex(){
+  const c=document.createElement("canvas"); c.width=256; c.height=56;
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+  const draw=(txt, on)=>{ const g=c.getContext("2d"); g.fillStyle="#050a08"; g.fillRect(0,0,256,56);
+    g.font='46px VT323'; g.textBaseline="middle"; g.fillStyle=on?"#7dffcf":"#14302a"; g.shadowColor="#2bffb0"; g.shadowBlur=on?10:0;
+    g.fillText(txt||"--:--:--",12,30); t.needsUpdate=true; };
+  draw("",false); return {tex:t, draw};
+}
+function fallbackVCR(){
+  const g=new THREE.Group(), w=.43, h=.085, d=.30;
+  const body=new THREE.Mesh(new RoundedBoxGeometry(w,h,d,3,.006), plastic(0x2a2a2e,.38,.35)); body.position.y=h/2; g.add(body);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(w-.01,h-.01), new THREE.MeshStandardMaterial({roughness:.5, map:canvasTex(860,170,(c,W,H)=>{
+    c.fillStyle="#18181b"; c.fillRect(0,0,W,H);
+    c.fillStyle="#0c0c0e"; c.fillRect(60,30,440,62);           // boca da fita
+    c.strokeStyle="#333"; c.lineWidth=3; c.strokeRect(60,30,440,62);
+    c.fillStyle="#9a9aa2"; c.font='600 20px "Instrument Sans"'; c.fillText("VIDEO CASSETTE RECORDER",62,130);
+    c.font='700 16px "Instrument Sans"'; c.fillText("HQ  ·  4 HEAD  ·  STEREO",62,155);
+    ["◀◀","▶","▶▶","■","⏏"].forEach((s,i)=>{ c.fillStyle="#2c2c31"; c.fillRect(560+i*56,112,46,30); c.fillStyle="#bbb"; c.font='18px sans-serif'; c.textAlign="center"; c.fillText(s,583+i*56,133); c.textAlign="left"; });
+    noise(c,W,H,1500,.05);
+  })}));
+  face.position.set(0,h/2,d/2+.0005); g.add(face);
+  const flap=new THREE.Mesh(new THREE.BoxGeometry(.2,.03,.004), plastic(0x0d0d10,.4,.2));
+  const hinge=new THREE.Group(); hinge.position.set(-w/2+.01+(280/860)*(w-.01)-.0, h-(30/170)*(h-.01)-.005, d/2+.002); flap.position.y=-.015; hinge.add(flap); g.add(hinge);
+  const vfd=vfdTex();
+  const disp=new THREE.Mesh(new THREE.PlaneGeometry(.1,.022), new THREE.MeshBasicMaterial({map:vfd.tex, toneMapped:false}));
+  disp.position.set(w*.24, h*.62, d/2+.001); g.add(disp);
+  const slot=V3(hinge.position.x, hinge.position.y-.016, d/2);
+  return {group:g, size:V3(w,h,d), slot, flap:hinge, vfd};
+}
+function fallbackTV(){
+  const g=new THREE.Group(), w=.56, h=.46, d=.44;
+  const body=new THREE.Mesh(new RoundedBoxGeometry(w,h,d,4,.03), plastic(0x2b2622,.5,.05)); body.position.y=h/2; g.add(body);
+  // traseira do tubo, mais estreita
+  const back=new THREE.Mesh(new RoundedBoxGeometry(w*.7,h*.7,.18,3,.03), plastic(0x24201d,.6)); back.position.set(0,h*.48,-d/2-.06); g.add(back);
+  const bezel=new THREE.Mesh(new RoundedBoxGeometry(.43,.34,.02,3,.02), plastic(0x121111,.35)); bezel.position.set(-.05,h*.55,d/2); g.add(bezel);
+  // painel lateral: grade do alto-falante e botões
+  const panel=new THREE.Mesh(new THREE.PlaneGeometry(.085,.36), new THREE.MeshStandardMaterial({roughness:.6, map:canvasTex(96,400,(c,W,H)=>{
+    c.fillStyle="#1d1a17"; c.fillRect(0,0,W,H);
+    for(let y=200;y<390;y+=8) for(let x=10;x<W-6;x+=8){ c.fillStyle="#0a0908"; c.beginPath(); c.arc(x,y,2.4,0,7); c.fill(); }
+    c.fillStyle="#bdb5a6"; c.font='600 13px "Instrument Sans"'; c.fillText("COLOR",20,180);
+  })}));
+  panel.position.set(w/2-.06, h*.52, d/2+.001); g.add(panel);
+  for(const y of [.36,.3]){ const k=new THREE.Mesh(new THREE.CylinderGeometry(.016,.018,.02,24), plastic(0x8a8278,.4,.4)); k.rotation.x=Math.PI/2; k.position.set(w/2-.06,y,d/2+.01); g.add(k); }
+  const led=new THREE.Mesh(new THREE.CircleGeometry(.004,12), new THREE.MeshBasicMaterial({color:0x330000, toneMapped:false})); led.position.set(w/2-.06,.06,d/2+.001); g.add(led);
+  // antena de coelho
+  for(const s of [-1,1]){ const a=new THREE.Mesh(new THREE.CylinderGeometry(.0025,.0025,.42,8), plastic(0xb8b8b8,.25,.9)); a.position.set(s*.09,h+.19,-.05); a.rotation.z=-s*.5; g.add(a); }
+  const hub=new THREE.Mesh(new THREE.SphereGeometry(.03,16,12,0,Math.PI*2,0,Math.PI/2), plastic(0x1a1a1a)); hub.position.set(0,h,-.05); g.add(hub);
+  const screen={x:-.05, y:h*.55, w:.38, h:.285, z:d/2+.0115};
+  return {group:g, size:V3(w,h,d), screen, led};
+}
+function fallbackCassette(){
+  const g=new THREE.Group(), w=.187, h=.025, d=.103;
+  const shell=new THREE.Mesh(new RoundedBoxGeometry(w,h,d,2,.003), plastic(0x111113,.5)); g.add(shell);
+  const top=new THREE.Mesh(new THREE.PlaneGeometry(w-.01,d-.01), new THREE.MeshStandardMaterial({transparent:true, roughness:.4, map:canvasTex(374,186,(c,W,H)=>{
+    c.fillStyle="#f1ead8"; c.fillRect(20,10,W-40,52);
+    c.fillStyle="#2a2a2e"; c.fillRect(90,80,194,70);
+    for(const x of [140,234]){ c.fillStyle="#d8d2c4"; c.beginPath(); c.arc(x,115,22,0,7); c.fill(); c.fillStyle="#3a2a1c"; c.beginPath(); c.arc(x,115,12,0,7); c.fill(); }
+  })}));
+  top.rotation.x=-Math.PI/2; top.position.y=h/2+.0005; g.add(top);
+  const spineC=document.createElement("canvas"); spineC.width=512; spineC.height=68;
+  const spineT=new THREE.CanvasTexture(spineC); spineT.colorSpace=THREE.SRGBColorSpace;
+  const spine=new THREE.Mesh(new THREE.PlaneGeometry(w-.01,h-.006), new THREE.MeshStandardMaterial({map:spineT, roughness:.6}));
+  spine.position.z=d/2+.0005; g.add(spine);
+  const label=(m,cat)=>{ const c=spineC.getContext("2d"); c.fillStyle="#f1ead8"; c.fillRect(0,0,512,68); c.fillStyle=catColor(cat); c.fillRect(0,0,14,68);
+    c.fillStyle="#1a1410"; c.font='900 40px "Big Shoulders Display"'; c.textBaseline="middle"; let t=m.title.toUpperCase();
+    while(c.measureText(t).width>470 && t.length>4) t=t.slice(0,-2).trimEnd()+"…"; c.fillText(t,28,37); spineT.needsUpdate=true; };
+  return {group:g, size:V3(w,h,d), label};
+}
+
+let BENCH, VCR, TV, CAS, SCREEN, TVGLOW;
+async function buildBench(cena, x){
+  let glb = await loadModel(cena.bancada, "bancada");
+  BENCH = glb ? fit(glb, cena.bancada) : fallbackBench();
+  const top = cena.bancada.topo ?? BENCH.size.y;
+  BENCH.group.position.set(x, 0, .19); scene.add(BENCH.group);
+  const front = .19 + BENCH.size.z/2;
+
+  glb = await loadModel(cena.vcr, "vcr");
+  if(glb){
+    const f=fit(glb, cena.vcr), s=f.size, vfd=vfdTex();
+    const disp=new THREE.Mesh(new THREE.PlaneGeometry(cena.vcr.visor.largura*s.x, cena.vcr.visor.largura*s.x*.22), new THREE.MeshBasicMaterial({map:vfd.tex, toneMapped:false}));
+    disp.position.set((cena.vcr.visor.x-.5)*s.x, cena.vcr.visor.y*s.y, s.z/2+.002); f.group.add(disp);
+    VCR = {...f, vfd, slot:V3((cena.vcr.boca.x-.5)*s.x, cena.vcr.boca.y*s.y, s.z/2)};
+  } else VCR = fallbackVCR();
+  VCR.group.position.set(x, top, front-.04-VCR.size.z/2); scene.add(VCR.group);
+
+  glb = await loadModel(cena.tv, "tv");
+  if(glb){
+    const f=fit(glb, cena.tv), s=f.size, t=cena.tv.tela, sw=t.largura*s.x;
+    TV = {...f, screen:{x:(t.x-.5)*s.x, y:t.y*s.y, w:sw, h:sw*.75, z:s.z/2+t.z}};
+  } else TV = fallbackTV();
+  TV.group.position.set(x, top+VCR.size.y, VCR.group.position.z+VCR.size.z/2-.02-TV.size.z/2); scene.add(TV.group);
+
+  glb = await loadModel(cena.fita, "fita");
+  if(glb){ const f=fit(glb, cena.fita); f.group.children[0].position.y-=f.size.y/2; CAS={...f, label:()=>{}}; }
+  else CAS = fallbackCassette();
+  CAS.group.visible=false; scene.add(CAS.group);
+
+  // tela: um furo transparente no WebGL deixa ver o elemento CSS3D que fica atrás do canvas
+  const sc = TV.screen;
+  const hole = new THREE.Mesh(new THREE.PlaneGeometry(sc.w, sc.h), new THREE.MeshBasicMaterial({color:0, transparent:true, opacity:0, blending:THREE.NoBlending}));
+  hole.position.set(sc.x, sc.y, sc.z); TV.group.add(hole);
+  const obj = new CSS3DObject($("screenTpl").content.firstElementChild.cloneNode(true));
+  obj.scale.setScalar(sc.w/640);
+  TV.group.updateMatrixWorld(true);
+  obj.position.copy(hole.getWorldPosition(V3()));
+  cssScene.add(obj);
+  SCREEN = initScreen(obj.element);
+  TVGLOW = new THREE.PointLight(0x9fc4ff, 0, 2.2, 2);
+  TVGLOW.position.copy(hole.getWorldPosition(V3())).add(V3(0,0,.35)); scene.add(TVGLOW);
+  const lamp = new THREE.PointLight(0xffb36b, 2.2, 3.2, 2); lamp.position.set(x-.55, 1.5, .9); scene.add(lamp);
+  return {front, top};
+}
+const tvWorld = () => TV.group.localToWorld(V3(TV.screen.x, TV.screen.y, TV.screen.z));
+const slotWorld = () => VCR.group.localToWorld(VCR.slot.clone());
+
+// ---- Tela da TV ----
+function initScreen(el){
+  const q = s => el.querySelector(s);
+  const snow = q(".snow"), g = snow.getContext("2d"), img = g.createImageData(snow.width, snow.height), buf = new Uint32Array(img.data.buffer);
+  let raf = 0, bar = 0;
+  // chuvisco e barras de tracking, como no pen do Mobius1: alfa aleatório por pixel sobre o cinza
+  const frame = () => {
+    const W=snow.width, H=snow.height;
+    for(let i=0;i<buf.length;i++) buf[i] = ((255*Math.random())|0) << 24;
+    bar = (bar + 3) % (H+60);
+    for(let y=Math.max(0,bar-40); y<Math.min(H,bar); y++) for(let x=0;x<W;x++) if(Math.random()<.5) buf[y*W+x] = 0x30ffffff;
+    g.putImageData(img,0,0); raf = requestAnimationFrame(frame);
+  };
+  const osd = (txt, right) => { const o=q(".osd"); o.textContent=txt; o.classList.toggle("r",!!right); o.classList.add("show"); clearTimeout(osd.t); osd.t=setTimeout(()=>o.classList.remove("show"),2600); };
+  return {
+    async on(){ el.className="tvscreen on"; snow.classList.add("show"); cancelAnimationFrame(raf); frame(); await sleep(1200); },
+    play(m){
+      const pic=q(".pic");
+      if(!hasTrailer(m)) pic.innerHTML=`<div class="blue"><div>SEM SINAL</div><div style="font-size:30px">${esc(m.title.toUpperCase())}</div><a href="${searchURL(m)}" target="_blank" rel="noopener">PROCURAR TRAILER NO YOUTUBE</a></div>`;
+      else if(EMBED) pic.innerHTML=`<iframe title="Trailer de ${esc(m.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen src="https://www.youtube-nocookie.com/embed/${m.ytt}?autoplay=1&rel=0&playsinline=1&iv_load_policy=3&modestbranding=1"></iframe>`;
+      else { pic.innerHTML=`<video controls playsinline autoplay src="${m.tr}"></video>`; pic.querySelector("video").play().catch(()=>{}); }
+      el.classList.add("playing"); snow.classList.remove("show"); setTimeout(()=>cancelAnimationFrame(raf),700);
+      osd(hasTrailer(m)?"▶ PLAY":"CH 03");
+    },
+    async off(){ q(".pic").innerHTML=""; osd("■ STOP"); el.className="tvscreen turnoff"; await sleep(560); el.className="tvscreen"; cancelAnimationFrame(raf); snow.classList.remove("show"); }
+  };
+}
+
+// ---- Som (WebAudio): mecanismo do VCR e estalo da TV ----
+let AC=null, SOUND=true;
+try{ SOUND = localStorage.getItem("locadora-som")!=="0"; }catch(_){}
+const ac = () => { if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==="suspended") AC.resume(); return AC; };
+function noiseBuf(a, sec){ const b=a.createBuffer(1,a.sampleRate*sec,a.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; return b; }
+function sfx(kind){
+  if(!SOUND) return; const a=ac(), t=a.currentTime, out=a.createGain(); out.gain.value=.35; out.connect(a.destination);
+  const burst=(dur,freq,q,vol,at=0)=>{ const s=a.createBufferSource(); s.buffer=noiseBuf(a,dur); const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=freq; f.Q.value=q; const g=a.createGain(); g.gain.setValueAtTime(vol,t+at); g.gain.exponentialRampToValueAtTime(.001,t+at+dur); s.connect(f).connect(g).connect(out); s.start(t+at); };
+  const tone=(dur,f0,f1,type,vol,at=0)=>{ const o=a.createOscillator(); o.type=type; o.frequency.setValueAtTime(f0,t+at); o.frequency.exponentialRampToValueAtTime(f1,t+at+dur); const g=a.createGain(); g.gain.setValueAtTime(vol,t+at); g.gain.exponentialRampToValueAtTime(.001,t+at+dur); const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=900; o.connect(f).connect(g).connect(out); o.start(t+at); o.stop(t+at+dur); };
+  if(kind==="clunk"){ burst(.08,1800,1.5,1); tone(.18,120,50,"sine",.9); burst(.06,900,2,.8,.32); tone(.12,90,45,"sine",.7,.32); tone(1.1,70,95,"sawtooth",.12,.45); }
+  if(kind==="eject"){ tone(.6,95,60,"sawtooth",.12); burst(.07,1500,1.5,.9,.55); tone(.15,110,50,"sine",.8,.55); }
+  if(kind==="tvon"){ burst(.5,3200,.6,.5); tone(.25,60,40,"sine",.7); }
+  if(kind==="tvoff"){ tone(.3,300,40,"sine",.3); burst(.15,2500,.8,.3); }
+  if(kind==="pick"){ burst(.05,2400,3,.35); }
+}
+
+// ---- Câmera ----
+const view = {x:.9, y:1, d:1.3};            // estante: a câmera olha reto para a parede
+const cam = {pos:V3(.9,1,1.3), look:V3(.9,1,0)}, goal = {pos:V3(), look:V3()};
+let SHELF, BENCHINFO, BX;
+const vfov = () => camera.fov*Math.PI/180, hfov = () => 2*Math.atan(Math.tan(vfov()/2)*camera.aspect);
+const visH = d => 2*d*Math.tan(vfov()/2), visW = d => visH(d)*camera.aspect;
+function clampView(){
+  view.d = THREE.MathUtils.clamp(view.d, .42, 2.6);
+  view.x = THREE.MathUtils.clamp(view.x, -.3, BX+.4);
+  view.y = THREE.MathUtils.clamp(view.y, .3, Math.max(.3, SHELF.H-.12));
+}
+function shelfGoal(){ clampView(); goal.pos.set(view.x, view.y+.03, view.d); goal.look.set(view.x, view.y, 0); }
+// distância para enquadrar uma caixa w×h
+const fitDist = (w,h,m=1.12) => Math.max(h*m/2/Math.tan(vfov()/2), w*m/2/Math.tan(hfov()/2));
+function benchGoal(){
+  const s=tvWorld(), y=(BENCHINFO.top+TV.group.position.y+TV.size.y)/2 + .05;
+  const d=fitDist(1.15, TV.size.y+VCR.size.y+.35);
+  goal.pos.set(BX, y+.12, BENCHINFO.front+d); goal.look.set(BX, y, s.z);
+}
+let close=true;
+function watchGoal(){
+  const s=tvWorld();
+  if(!close) return benchGoal();
+  const d=fitDist(TV.screen.w, TV.screen.h, camera.aspect<1?1.04:1.18);
+  goal.pos.set(s.x, s.y, s.z+d); goal.look.copy(s);
+}
+
+// ---- Interações ----
+let mode="loading";  // shelf | held | busy | tv
+const ray=new THREE.Raycaster(), ptr=new THREE.Vector2();
+let hovered=null, held=null, shelfSaved=null;
+const setMode = m => { mode=m; document.body.className=m; };
+function pick(x,y,list){ ptr.set(x/innerWidth*2-1, -(y/innerHeight)*2+1); ray.setFromCamera(ptr,camera); return ray.intersectObjects(list,true)[0]; }
+
+function hover(t){
+  if(hovered===t) return;
+  if(hovered) hovered.userData.goal = hovered.userData.match?.03:0;
+  hovered=t; $("gl").classList.toggle("point",!!t);
+  if(t){ t.userData.goal=.05; const {m,cat}=t.userData; const tip=$("tip");
+    tip.style.setProperty("--dot",catColor(cat)); tip.innerHTML=`<b>${esc(m.title)}</b><span>${m.year||""} · ${esc(CAT[cat].name)}</span>`; tip.hidden=false; }
+  else $("tip").hidden=true;
+}
+
+// capa (face +x) e contracapa (face −x) da caixa na mão
+let POSTERS={};
+function coverTex(m, cat){
+  return canvasTex(512,926,(g,w,h)=>{
+    const col=catColor(cat), hue=hueOf(m.title);
+    g.fillStyle=`hsl(${hue} 30% 12%)`; g.fillRect(0,0,w,h);
+    const finish=()=>{
+      g.fillStyle="#000a"; g.fillRect(0,0,w,74); g.fillStyle=col; g.fillRect(0,70,w,6);
+      g.fillStyle="#f3ead2"; g.font='900 46px "Big Shoulders Display"'; g.textBaseline="middle"; g.fillText("VHS",22,38);
+      g.font='30px VT323'; g.textAlign="right"; g.fillText("CINEMATECA ESTRANHA VÍDEO",w-20,40); g.textAlign="left";
+      g.fillStyle="#000c"; g.fillRect(0,h-150,w,150); g.fillStyle=col; g.fillRect(0,h-150,w,5);
+      g.fillStyle="#f3ead2"; let fs=60, t=m.title.toUpperCase();
+      for(;fs>26;fs-=2){ g.font=`900 ${fs}px "Big Shoulders Display"`; if(g.measureText(t).width<=w-44) break; }
+      while(g.measureText(t).width>w-44 && t.length>4) t=t.slice(0,-2).trimEnd()+"…";
+      g.fillText(t,22,h-96); g.font='30px VT323'; g.fillStyle=col; g.fillText([m.year,m.countries[0]].filter(Boolean).join(" · ").toUpperCase(),22,h-44);
+    };
+    finish();
+  });
+}
+function backTex(m, cat){
+  return canvasTex(512,926,(g,w,h)=>{
+    const col=catColor(cat); g.fillStyle="#141019"; g.fillRect(0,0,w,h);
+    g.fillStyle=col; g.fillRect(0,0,w,8);
+    g.fillStyle="#f3ead2"; g.font='900 44px "Big Shoulders Display"'; g.textBaseline="top";
+    const wrap=(txt,x,y,maxW,lh)=>{ let line=""; for(const word of txt.split(" ")){ if(g.measureText(line+word).width>maxW&&line){ g.fillText(line.trim(),x,y); y+=lh; line=""; } line+=word+" "; } g.fillText(line.trim(),x,y); return y+lh; };
+    let y=wrap(m.title.toUpperCase(),28,40,w-56,46)+10;
+    g.font='30px VT323'; g.fillStyle=col; g.fillText("SESSÃO "+CAT[cat].name.toUpperCase(),28,y); y+=50;
+    const row=(k,v)=>{ if(!v) return; g.fillStyle="#a39bb0"; g.font='28px VT323'; g.fillText(k,28,y); g.fillStyle="#efe9dc"; g.font='500 24px "Instrument Sans"'; y=wrap(v,170,y+2,w-200,30)+8; };
+    row("DIREÇÃO",m.directors.join(", ")); row("ANO",String(m.year||"")); row("PAÍS",m.countries.join(", ")); row("GÊNERO",m.genres.join(", ")); row("ELENCO",m.cast);
+    // código de barras e selos
+    for(let x=28;x<230;x+=3+(hueOf(m.id+x)%3)){ g.fillStyle="#efe9dc"; g.fillRect(x,h-130,1+(hueOf(x+m.id)%3),70); }
+    g.font='26px VT323'; g.fillStyle="#efe9dc"; g.fillText(m.id.toUpperCase(),28,h-52);
+    g.strokeStyle="#efe9dc"; g.lineWidth=2; g.strokeRect(w-200,h-130,172,70); g.textAlign="center"; g.fillText("COLORIDO · NTSC",w-114,h-112); g.fillText("VHS HI-FI",w-114,h-84);
+  });
+}
+function makeHeld(t){
+  const {m,cat}=t.userData;
+  const cov=coverTex(m,cat);
+  const src=POSTERS[m.id];
+  if(src){ // a capa recebe o pôster quando a imagem carrega
+    const im=new Image(); im.onload=()=>{ const c=cov.image, g=c.getContext("2d"), w=c.width, h=c.height; const r=Math.max(w/im.width,(h-224)/im.height), iw=im.width*r, ih=im.height*r;
+      g.save(); g.beginPath(); g.rect(0,76,w,h-226); g.clip(); g.drawImage(im,(w-iw)/2,76+(h-226-ih)/2,iw,ih); g.restore(); cov.needsUpdate=true; }; im.src=src; }
+  const side=t.material[0], edge=t.material[2], spine=t.material[4];
+  const mesh=new THREE.Mesh(t.geometry, [new THREE.MeshStandardMaterial({map:cov,roughness:.4}), new THREE.MeshStandardMaterial({map:backTex(m,cat),roughness:.5}), edge, edge, spine, side]);
+  mesh.position.copy(t.getWorldPosition(V3())); mesh.quaternion.copy(t.quaternion);
+  scene.add(mesh); t.visible=false;
+  return {mesh, tape:t, m, cat, spin:0};
+}
+// frente da câmera, um pouco à esquerda (o cartão fica à direita); no celular, acima do cartão
+function heldSpot(){
+  const dir=V3(); camera.getWorldDirection(dir);
+  const p=camera.position.clone().add(dir.multiplyScalar(.42));
+  const narrow=innerWidth<720;
+  p.add(V3(narrow?0:-visW(.42)*.16, narrow?visH(.42)*.17:0, 0));
+  return p;
+}
+const qY = a => new THREE.Quaternion().setFromAxisAngle(V3(0,1,0),a);
+
+// tween simples com promessa
+const TW=new Set(); const ease=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const tween=(ms,fn,e=ease)=>new Promise(res=>TW.add({t0:performance.now(),ms,fn,e,res}));
+function moveObj(o, toPos, toQuat, ms, arc=0){
+  const p0=o.position.clone(), q0=o.quaternion.clone();
+  return tween(ms, k=>{ o.position.lerpVectors(p0,toPos,k); if(arc) o.position.y+=Math.sin(k*Math.PI)*arc; if(toQuat) o.quaternion.slerpQuaternions(q0,toQuat,k); });
+}
+
+async function select(t){
+  if(mode!=="shelf") return;
+  hover(null); sfx("pick");
+  shelfSaved={...view};
+  held=makeHeld(t); setMode("busy");
+  // a fita sai da estante na direção de quem olha antes de voar até a mão
+  await moveObj(held.mesh, held.mesh.position.clone().add(V3(0,0,.14)), null, 260);
+  await moveObj(held.mesh, heldSpot(), qY(-Math.PI/2), 520);
+  showCard(); setMode("held");
+}
+function showCard(){
+  const {m,cat}=held, card=$("card"), tr=hasTrailer(m);
+  card.style.setProperty("--dot",catColor(cat));
+  card.innerHTML=`<div class="kick">${esc(CAT[cat].name)}</div>
+    <h2>${esc(m.title)}</h2>${m.aka.length?`<div class="aka">${m.aka.map(esc).join(" · ")}</div>`:""}
+    <dl>${[["Ano",m.year],["Direção",m.directors.join(", ")],["País",m.countries.join(", ")],["Gênero",m.genres.join(", ")],["Elenco",m.cast]].filter(([,v])=>v).map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+    <div class="acts"><button class="chip primary" type="button" id="insert">▶ Pôr no VCR</button><button class="chip" type="button" id="putback">Devolver</button></div>
+    <div class="note">${tr?"Arraste a caixa para ver a contracapa.":"Esta fita não tem trailer gravado: a TV mostra só a tela azul."}</div>`;
+  card.hidden=false;
+  $("insert").onclick=insert; $("putback").onclick=putBack;
+  $("insert").focus({preventScroll:true});
+}
+async function putBack(){
+  if(mode!=="held") return;
+  $("card").hidden=true; setMode("busy");
+  const t=held.tape, home=t.getWorldPosition(V3());
+  await moveObj(held.mesh, home.clone().add(V3(0,0,.14)), t.quaternion, 480);
+  await moveObj(held.mesh, home, null, 220);
+  scene.remove(held.mesh); t.visible=true; held=null; setMode("shelf");
+}
+
+async function insert(){
+  if(mode!=="held") return;
+  const m=held.m; ac();
+  $("card").hidden=true; setMode("busy");
+  history.replaceState(null,"","#"+m.id);
+  benchGoal();
+  const slot=slotWorld(), side=VCR.group.localToWorld(V3(-VCR.size.x/2-.12, 0, 0));
+  // a caixa pousa em pé ao lado do VCR, com a capa para a frente
+  const stand=V3(side.x, BENCHINFO.top+TAPE.h/2, slot.z-.04);
+  await moveObj(held.mesh, stand, qY(-Math.PI/2), 1300, .25);
+  // a fita sai de dentro da caixa (deitada na caixa em pé = girada 90° em z)
+  CAS.label(m, held.cat);
+  const c=CAS.group; c.visible=true;
+  c.position.copy(stand); c.quaternion.copy(qY(-Math.PI/2)).multiply(new THREE.Quaternion().setFromAxisAngle(V3(0,0,1),Math.PI/2));
+  await tween(420, k=>{ c.position.y = stand.y + k*.2; });
+  const flat=new THREE.Quaternion();
+  await moveObj(c, slot.clone().add(V3(0,0,.16)), flat, 650, .05);
+  if(VCR.flap) tween(200,k=>VCR.flap.rotation.x=-k*1.3);
+  sfx("clunk");
+  await moveObj(c, slot.clone().add(V3(0,0,-.13)), null, 520);
+  c.visible=false;
+  if(VCR.flap) tween(160,k=>VCR.flap.rotation.x=-(1-k)*1.3);
+  startCounter();
+  await sleep(250);
+  sfx("tvon"); if(TV.led) TV.led.material.color.set(0xff2a1a);
+  glow=1; await SCREEN.on();
+  SCREEN.play(m);
+  close=true; watchGoal(); $("frame").textContent="Afastar";
+  setMode("tv"); $("watchbar").hidden=false; $("eject").focus({preventScroll:true});
+}
+async function eject(){
+  if(mode!=="tv") return;
+  setMode("busy"); $("watchbar").hidden=true;
+  history.replaceState(null,"",location.pathname+location.search);
+  sfx("tvoff"); glow=0; await SCREEN.off(); if(TV.led) TV.led.material.color.set(0x330000);
+  stopCounter("EJECT");
+  benchGoal(); await sleep(350);
+  sfx("eject");
+  const slot=slotWorld(), c=CAS.group, stand=held.mesh.position.clone();
+  if(VCR.flap) tween(200,k=>VCR.flap.rotation.x=-k*1.3);
+  c.visible=true; c.position.copy(slot).add(V3(0,0,-.13)); c.quaternion.identity();
+  await sleep(550);
+  await moveObj(c, slot.clone().add(V3(0,0,.16)), null, 480);
+  if(VCR.flap) tween(160,k=>VCR.flap.rotation.x=-(1-k)*1.3);
+  const inBox=qY(-Math.PI/2).multiply(new THREE.Quaternion().setFromAxisAngle(V3(0,0,1),Math.PI/2));
+  await moveObj(c, stand.clone().add(V3(0,.2,0)), inBox, 650, .05);
+  await tween(380, k=>{ c.position.y = stand.y + (1-k)*.2; });
+  c.visible=false; stopCounter("");
+  // de volta à estante, no mesmo lugar de onde saiu
+  Object.assign(view, shelfSaved); shelfGoal();
+  const t=held.tape, home=t.getWorldPosition(V3());
+  await moveObj(held.mesh, home.clone().add(V3(0,0,.14)), t.quaternion, 1300, .2);
+  await moveObj(held.mesh, home, null, 240);
+  scene.remove(held.mesh); t.visible=true; held=null; setMode("shelf");
+}
+
+// contador do VCR
+let counter=null;
+function startCounter(){ const t0=performance.now(); clearInterval(counter);
+  const tick=()=>{ const s=Math.floor((performance.now()-t0)/1000); VCR.vfd.draw("▶ "+Math.floor(s/3600)+":"+String(Math.floor(s/60)%60).padStart(2,"0")+":"+String(s%60).padStart(2,"0"), true); };
+  tick(); counter=setInterval(tick,500); }
+function stopCounter(txt){ clearInterval(counter); VCR.vfd.draw(txt, !!txt); }
+
+// ---- Ponteiro: arrastar anda pela estante (ou gira a caixa na mão); clique escolhe ----
+const P=new Map(); let down=null, pinch0=0;
+const gl=$("gl");
+gl.addEventListener("pointerdown", e=>{
+  gl.setPointerCapture(e.pointerId); P.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(P.size===2){ const [a,b]=[...P.values()]; pinch0=Math.hypot(a.x-b.x,a.y-b.y); down=null; return; }
+  down={x:e.clientX, y:e.clientY, vx:view.x, vy:view.y, spin:held?.spin, moved:false};
+});
+gl.addEventListener("pointermove", e=>{
+  if(P.has(e.pointerId)) P.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(P.size===2 && mode==="shelf"){ const [a,b]=[...P.values()], d=Math.hypot(a.x-b.x,a.y-b.y); if(pinch0){ view.d*=pinch0/d; pinch0=d; shelfGoal(); } return; }
+  if(down){
+    const dx=e.clientX-down.x, dy=e.clientY-down.y;
+    if(!down.moved && Math.hypot(dx,dy)>6){ down.moved=true; gl.classList.add("drag"); hover(null); }
+    if(down.moved && mode==="shelf"){ const k=visH(view.d)/innerHeight; view.x=down.vx-dx*k; view.y=down.vy+dy*k; shelfGoal(); }
+    if(down.moved && mode==="held") held.spin=down.spin+dx*.012;
+    return;
+  }
+  if(mode==="shelf" && e.pointerType==="mouse"){
+    const h=pick(e.clientX,e.clientY,TAPES); hover(h?.object||null);
+    const tip=$("tip"); tip.style.left=e.clientX+"px"; tip.style.top=e.clientY+"px";
+  }
+});
+const up=e=>{
+  P.delete(e.pointerId); if(P.size<2) pinch0=0;
+  gl.classList.remove("drag");
+  if(!down) return; const d=down; down=null; if(d.moved) return;
+  if(mode==="shelf"){ const h=pick(e.clientX,e.clientY,TAPES); if(h) select(h.object); }
+  else if(mode==="held"){
+    if(pick(e.clientX,e.clientY,[held.mesh])) return;
+    if(pick(e.clientX,e.clientY,[VCR.group])) return insert();
+    putBack();
+  }
+};
+gl.addEventListener("pointerup", up); gl.addEventListener("pointercancel", e=>{ P.delete(e.pointerId); down=null; });
+gl.addEventListener("pointerleave", ()=>{ if(!down) hover(null); });
+gl.addEventListener("wheel", e=>{
+  e.preventDefault(); if(mode!=="shelf") return;
+  if(e.ctrlKey) view.d*=Math.exp(e.deltaY*.01);
+  else { const k=visH(view.d)/innerHeight; view.x+=(e.deltaX+e.deltaY)*k*.9; }
+  shelfGoal();
+},{passive:false});
+const zoom=f=>{ if(mode!=="shelf") return; view.d*=f; shelfGoal(); };
+$("zin").onclick=()=>zoom(.8); $("zout").onclick=()=>zoom(1.25);
+addEventListener("keydown", e=>{
+  if(e.target.matches("input")){ if(e.key==="Escape"){ e.target.value=""; search(""); e.target.blur(); } return; }
+  if(e.key==="/"){ e.preventDefault(); $("q").focus(); return; }
+  if(e.key==="Escape"){ if(mode==="held") putBack(); else if(mode==="tv") eject(); return; }
+  if(mode!=="shelf") return;
+  const k=visW(view.d)*.25, s={ArrowLeft:[-k,0],ArrowRight:[k,0],ArrowUp:[0,ROW_H],ArrowDown:[0,-ROW_H]}[e.key];
+  if(s){ e.preventDefault(); view.x+=s[0]; view.y+=s[1]; shelfGoal(); }
+  if(e.key==="+"||e.key==="=") zoom(.8); if(e.key==="-") zoom(1.25);
+});
+$("eject").onclick=eject;
+$("frame").onclick=()=>{ close=!close; $("frame").textContent=close?"Afastar":"Aproximar"; watchGoal(); };
+$("sound").onclick=()=>{ SOUND=!SOUND; $("sound").setAttribute("aria-pressed",SOUND); try{ localStorage.setItem("locadora-som",SOUND?"1":"0"); }catch(_){} };
+$("sound").setAttribute("aria-pressed",SOUND);
+
+// prateleiras: cada aba leva ao começo da sua prateleira
+function goRow(cat){
+  const r=ROWS.find(r=>r.cat===cat); if(!r) return;
+  view.d=Math.min(view.d,1.3); view.y=r.y+TAPE.h/2+.02; view.x=visW(view.d)/2-.05; shelfGoal();
+  [...$("tabs").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===cat));
+}
+// busca: as fitas encontradas saem um pouco da estante; a lista leva até a fita
+function search(q){
+  const n=norm(q.trim()), res=$("results");
+  TAPES.forEach(t=>{ t.userData.match = !!n && t.userData.m.hay.includes(n); t.userData.goal = t===hovered?.05:t.userData.match?.03:0; });
+  if(!n){ res.hidden=true; return; }
+  const seen=new Set(), hits=TAPES.filter(t=>t.userData.match && !seen.has(t.userData.m.id) && seen.add(t.userData.m.id)).slice(0,8);
+  res.innerHTML = hits.length ? hits.map(t=>`<button type="button" data-t="${TAPES.indexOf(t)}" style="--dot:${catColor(t.userData.cat)}"><i></i><b>${esc(t.userData.m.title)}</b><span>${t.userData.m.year||""}</span></button>`).join("")
+    : `<button type="button" disabled><b>Nenhuma fita com esse nome</b></button>`;
+  res.hidden=false;
+}
+$("q").addEventListener("input", e=>search(e.target.value));
+$("q").addEventListener("keydown", e=>{ if(e.key==="Enter"){ const b=$("results").querySelector("[data-t]"); if(b) b.click(); } });
+$("results").addEventListener("click", async e=>{
+  const b=e.target.closest("[data-t]"); if(!b) return;
+  $("results").hidden=true; $("q").blur();
+  if(mode==="held") await putBack(); if(mode==="tv") await eject();
+  if(mode!=="shelf") return;
+  const t=TAPES[+b.dataset.t], p=t.userData.home;
+  view.d=Math.min(view.d,.9); view.x=p.x; view.y=p.y; shelfGoal();
+  await sleep(700); select(t);
+});
+document.addEventListener("pointerdown", e=>{ if(!e.target.closest(".search")) $("results").hidden=true; });
+
+$("creditsBtn").onclick=()=>$("credits").showModal();
+function credits(list){
+  const used=(list||[]).filter(c=>LOADED.includes(c.chave));
+  $("crBody").innerHTML = (used.length?`<ul>${used.map(c=>`<li><a href="${esc(c.link)}" target="_blank" rel="noopener">${esc(c.nome)}</a> por ${esc(c.autor)} · ${esc(c.licenca)}</li>`).join("")}</ul>`:"")
+    + (LOADED.length<5?`<p>${used.length?"As demais peças":"As peças da cena"} são provisórias, desenhadas no código. Os modelos do Sketchfab entram quando forem salvos em <code>site/modelos/</code>.</p>`:"")
+    + `<p>Efeito de TV inspirado em <a href="https://codepen.io/Mobius1/pen/ZNgwbr" target="_blank" rel="noopener">CRT TV</a>, de Karl Saunders (Mobius1). 3D com <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a>.</p>`;
+}
+
+// ---- Laço ----
+let glow=0, last=performance.now();
+function resize(){ const w=innerWidth, h=innerHeight; renderer.setSize(w,h,false); cssR.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix();
+  if(mode==="shelf"||mode==="held"||mode==="loading") { if(SHELF) shelfGoal(); } else if(mode==="tv") watchGoal(); }
+addEventListener("resize", resize);
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now;
+  for(const t of TW){ const p=Math.min(1,(now-t.t0)/t.ms); t.fn(t.e(p)); if(p>=1){ TW.delete(t); t.res(); } }
+  const k=1-Math.exp(-dt*5);
+  cam.pos.lerp(goal.pos,k); cam.look.lerp(goal.look,k);
+  camera.position.copy(cam.pos); camera.lookAt(cam.look);
+  for(const t of TAPES){ const u=t.userData; if(Math.abs(u.goal-u.pull)>1e-4){ u.pull+=(u.goal-u.pull)*Math.min(1,dt*14); t.position.z=u.home.z+u.pull; } }
+  if(mode==="held" && held){ held.spin*=.995; held.mesh.quaternion.copy(qY(-Math.PI/2+held.spin+Math.sin(now/900)*.06)); held.mesh.position.copy(heldSpot()); }
+  if(TVGLOW){ const target=glow*(.7+Math.random()*.5); TVGLOW.intensity+= (target*1.4-TVGLOW.intensity)*.3; }
+  if(NEON) NEON.neonL.intensity = .7*(Math.random()<.004?.2:1);
+  renderer.render(scene,camera); cssR.render(cssScene,camera);
+  requestAnimationFrame(loop);
+}
+
+// ---- Montagem ----
+let NEON;
+(async()=>{
+  const [cenaJ, credJ] = await Promise.all([getJSON("modelos/cena.json"), getJSON("modelos/creditos.json")]);
+  const CENA = merge(structuredClone(CENA_PADRAO), cenaJ);
+  getJSON("posters.json").then(p=>{ if(p) POSTERS=p; });
+  scene.add(new THREE.HemisphereLight(0x9a9ac8, 0x2a1418, .55));
+  scene.add(new THREE.AmbientLight(0xffffff, .12));
+  SHELF = await buildShelf(CENA.estante);
+  BX = SHELF.W + .95;
+  BENCHINFO = await buildBench(CENA, BX);
+  NEON = buildRoom(SHELF.W, BX);
+  NEON.neon.position.y = SHELF.H + .22;
+  NEON.neonL.position.set(NEON.neon.position.x, SHELF.H+.22, .3);
+  for(const x of [.25,.5,.75].map(f=>SHELF.W*f)){ const l=new THREE.PointLight(0xffd6a0, 1.6, 2.6, 2); l.position.set(x, SHELF.H+.25, .9); scene.add(l); }
+  credits(credJ);
+  $("tagline").textContent = `${MOVIES.length} fitas · ${CATS.length} prateleiras`;
+  $("tabs").innerHTML = CATS.map(c=>`<button class="chip" type="button" data-c="${c.id}" style="--dot:${catColor(c.id)}" aria-pressed="false"><i></i>${esc(c.name)}</button>`).join("");
+  $("tabs").onclick = e=>{ const b=e.target.closest("[data-c]"); if(b && mode==="shelf") goRow(b.dataset.c); };
+  resize();
+  view.d = innerWidth<720 ? .95 : 1.25; view.y = ROWS[0].y + TAPE.h/2 - (innerWidth<720 ? 0 : ROW_H*.9); view.x = visW(view.d)/2 - .05;
+  shelfGoal(); cam.pos.copy(goal.pos).add(V3(-.3,.1,.6)); cam.look.copy(goal.look);
+  setMode("shelf");
+  requestAnimationFrame(loop);
+  setTimeout(()=>{ $("loading").classList.add("done"); setTimeout(()=>$("hint").style.opacity=0, 7000); }, 300);
+  // #<id do filme> abre com a fita já no VCR
+  const id=location.hash.slice(1), t=id && TAPES.find(t=>t.userData.m.id===id);
+  if(t){ const p=t.userData.home; view.x=p.x; view.y=p.y; shelfGoal(); await sleep(900); await select(t); await sleep(400); insert(); }
+})();
+</script>
+<template id="screenTpl"><div class="tvscreen"><div class="tube"><div class="pic"></div><canvas class="snow" width="320" height="240"></canvas><div class="osd"></div></div><div class="scan"></div><div class="vig"></div></div></template>

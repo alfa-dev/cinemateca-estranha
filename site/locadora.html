@@ -121,9 +121,15 @@ body:not(.shelf) .zoom, body:not(.shelf) .hint{opacity:0;pointer-events:none}
 .card dd{margin:0}
 .card .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
 .card .note{font:17px/1.15 var(--vt);color:var(--muted);margin-top:12px;letter-spacing:.03em}
+.card .meta{display:none;font-size:14px;color:var(--muted);margin-top:2px}
 @media (max-width:720px){
-  .card{top:auto;bottom:max(12px,env(safe-area-inset-bottom,0px));translate:none;left:16px;right:16px;width:auto;max-height:46dvh}
-  .card h2{font-size:28px}
+  .card{top:auto;bottom:max(10px,env(safe-area-inset-bottom,0px));translate:none;left:12px;right:12px;width:auto;padding:10px 14px 12px;border-top-width:3px}
+  .card h2{font-size:24px;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .kick{font-size:17px}
+  .card dl,.card .note,.card .aka{display:none}
+  .card .meta{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .acts{margin-top:10px}
+  body.held .tabs,body.busy .tabs{display:none}
 }
 
 .watchbar{position:fixed;z-index:5;left:50%;translate:-50% 0;bottom:max(14px,env(safe-area-inset-bottom,0px));display:flex;gap:8px}
@@ -775,18 +781,20 @@ function makeHeld(t){
     const im=new Image(); im.onload=()=>{ const c=cov.image, g=c.getContext("2d"), w=c.width, h=c.height; const r=Math.max(w/im.width,(h-224)/im.height), iw=im.width*r, ih=im.height*r;
       g.save(); g.beginPath(); g.rect(0,76,w,h-226); g.clip(); g.drawImage(im,(w-iw)/2,76+(h-226-ih)/2,iw,ih); g.restore(); cov.needsUpdate=true; }; im.src=src; }
   const side=t.material[0], edge=t.material[2], spine=t.material[4];
-  const mesh=new THREE.Mesh(t.geometry, [new THREE.MeshStandardMaterial({map:cov,roughness:.4}), new THREE.MeshStandardMaterial({map:backTex(m,cat),roughness:.5}), edge, edge, spine, side]);
+  const e2=edge.clone(), mesh=new THREE.Mesh(t.geometry, [new THREE.MeshStandardMaterial({map:cov,roughness:.4}), new THREE.MeshStandardMaterial({map:backTex(m,cat),roughness:.5}), e2, e2, spine.clone(), side.clone()]);
   mesh.position.copy(t.getWorldPosition(V3())); mesh.quaternion.copy(t.quaternion);
   scene.add(mesh); t.visible=false;
   return {mesh, tape:t, m, cat, spin:0};
 }
+// na mão, a caixa é desenhada por cima da cena (a caixa é convexa, então dispensa o teste de profundidade)
+function onTop(mesh, on){ mesh.renderOrder=on?10:0; mesh.material.forEach(x=>{ x.depthTest=!on; x.depthWrite=!on; }); }
 // a caixa na mão ocupa o espaço livre da tela: abaixo do topo e à esquerda do cartão (no celular, acima dele)
 function heldSpot(){
   const y0=document.querySelector(".top").getBoundingClientRect().bottom+8, card=$("card");
   let x0=0, x1=innerWidth, y1=innerHeight-16;
   if(!card.hidden){ const r=card.getBoundingClientRect(); if(innerWidth<720) y1=r.top-8; else x1=r.left-16; }
-  const f=2*Math.tan(vfov()/2), ph=Math.max(60,y1-y0)*.86, pw=Math.max(40,x1-x0)*.8;
-  const D=Math.max(TAPE.h*innerHeight/(ph*f), TAPE.d*innerHeight/(pw*f), .22);
+  const f=2*Math.tan(vfov()/2), ph=Math.max(60,y1-y0)*.95, pw=Math.max(40,x1-x0)*.92;
+  const D=Math.max(TAPE.h*innerHeight/(ph*f), TAPE.d*innerHeight/(pw*f), .18);
   ray.setFromCamera(new THREE.Vector2((x0+x1)/innerWidth-1, 1-(y0+y1)/innerHeight), camera);
   const dir=V3(); camera.getWorldDirection(dir);
   return ray.ray.at(D/ray.ray.direction.dot(dir), V3());
@@ -808,7 +816,7 @@ async function select(t){
   held=makeHeld(t); setMode("busy");
   // a fita sai da estante na direção de quem olha antes de voar até a mão
   await moveObj(held.mesh, held.mesh.position.clone().add(V3(0,0,.14)), null, 260);
-  showCard(); SCREEN.load(held.m);
+  showCard(); SCREEN.load(held.m); onTop(held.mesh, true);
   await moveObj(held.mesh, heldSpot(), qY(-Math.PI/2), 520);
   setMode("held"); $("insert").focus({preventScroll:true});
 }
@@ -817,6 +825,7 @@ function showCard(){
   card.style.setProperty("--dot",catColor(cat));
   card.innerHTML=`<div class="kick">${esc(CAT[cat].name)}</div>
     <h2>${esc(m.title)}</h2>${m.aka.length?`<div class="aka">${m.aka.map(esc).join(" · ")}</div>`:""}
+    <div class="meta">${esc([m.year,m.countries[0],m.directors[0]].filter(Boolean).join(" · "))}</div>
     <dl>${[["Ano",m.year],["Direção",m.directors.join(", ")],["País",m.countries.join(", ")],["Gênero",m.genres.join(", ")],["Elenco",m.cast]].filter(([,v])=>v).map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
     <div class="acts"><button class="chip primary" type="button" id="insert">▶ Pôr no VCR</button><button class="chip" type="button" id="putback">Devolver</button></div>
     <div class="note">${tr?"Arraste a caixa para ver a contracapa.":"Esta fita não tem trailer gravado: a TV mostra só a tela azul."}</div>`;
@@ -828,6 +837,7 @@ async function putBack(){
   $("card").hidden=true; setMode("busy"); SCREEN.unload();
   const t=held.tape, home=t.getWorldPosition(V3());
   await moveObj(held.mesh, home.clone().add(V3(0,0,.14)), t.quaternion, 480);
+  onTop(held.mesh, false);
   await moveObj(held.mesh, home, null, 220);
   scene.remove(held.mesh); t.visible=true; held=null; setMode("shelf");
 }
@@ -842,6 +852,7 @@ async function insert(){
   // a caixa pousa em pé ao lado do VCR, com a capa para a frente
   const stand=V3(side.x, BENCHINFO.top+TAPE.h/2, slot.z-.04);
   await moveObj(held.mesh, stand, qY(-Math.PI/2), 1300, .25);
+  onTop(held.mesh, false);
   // a fita sai de dentro da caixa (deitada na caixa em pé = girada 90° em z)
   CAS.label(m, held.cat);
   const c=CAS.group; c.visible=true;
@@ -1020,7 +1031,7 @@ let NEON;
   scene.add(new THREE.HemisphereLight(0x9a9ac8, 0x2a1418, .55));
   scene.add(new THREE.AmbientLight(0xffffff, .12));
   // luz de mão: alcance curto, só clareia a caixa que está perto da câmera
-  const hand=new THREE.PointLight(0xfff0dd, 1.6, .9, 2); hand.position.set(.05,.1,0); camera.add(hand); scene.add(camera);
+  const hand=new THREE.PointLight(0xfff0dd, 1.0, .9, 2); hand.position.set(.05,.1,0); camera.add(hand); scene.add(camera);
   SHELF = await buildShelf(CENA.estante);
   BX = SHELF.W + .95;
   BENCHINFO = await buildBench(CENA, BX);
